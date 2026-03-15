@@ -1,0 +1,130 @@
+import React from 'react';
+import { X, Printer, Share2 } from 'lucide-react';
+
+interface ReceiptPreviewProps {
+  order: any;
+  onClose: () => void;
+}
+
+const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
+  if (!order) return null;
+
+    const handlePrint = () => {
+      window.print();
+    };
+
+    return (
+      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 print:p-0 print:bg-white print:relative">
+        <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[700px] animate-in slide-in-from-bottom-8 print:shadow-none print:w-full print:h-auto print:rounded-none">
+          <div className="p-4 border-b flex justify-between items-center bg-slate-50 print:hidden">
+            <h2 className="font-bold text-slate-700">Tax Invoice Preview</h2>
+            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+              <X size={20} className="text-slate-500" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-8 font-mono text-sm text-slate-800 print:overflow-visible print:p-4" id="receipt-content">
+            <div className="text-center mb-6">
+              <h1 className="text-xl font-black uppercase tracking-tighter mb-1">Modern POS Retail</h1>
+              <p className="text-xs">123, Business Hub, MG Road</p>
+              <p className="text-xs">Bangalore - 560001</p>
+              <p className="text-xs font-bold mt-2">GSTIN: 29AAAAA0000A1Z5</p>
+            </div>
+
+            <div className="border-t border-b border-dashed border-slate-300 py-3 mb-6 space-y-1">
+              <div className="flex justify-between">
+                <span>Invoice:</span>
+                <span className="font-bold">{order.invoiceNo}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Date:</span>
+                <span>{new Date(order.createdAt).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Customer:</span>
+                <span className="font-bold">{order.customer?.name || 'Walk-in'}</span>
+              </div>
+            </div>
+
+            <table className="w-full mb-6">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs uppercase font-bold text-slate-400">
+                  <th className="py-2">Item</th>
+                  <th className="py-2 text-center">Qty</th>
+                  <th className="py-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {order.orderItems.map((item: any) => (
+                  <tr key={item.id}>
+                    <td className="py-2 pr-2">
+                      <p className="font-bold leading-tight">{item.product?.name || 'Product'}</p>
+                      <p className="text-[10px] text-slate-400">₹{item.price.toFixed(2)} + GST</p>
+                    </td>
+                    <td className="py-2 text-center align-top">{item.quantity}</td>
+                    <td className="py-2 text-right align-top font-bold">₹{item.total.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="border-t-2 border-double border-slate-300 pt-4 space-y-2">
+              <div className="flex justify-between font-medium">
+                <span>Subtotal:</span>
+                <span>₹{order.subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>CGST (9%):</span>
+                <span>₹{(order.taxTotal / 2).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>SGST (9%):</span>
+                <span>₹{(order.taxTotal / 2).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-lg font-black pt-2 border-t border-slate-100">
+                <span>Grand Total:</span>
+                <span>₹{order.grandTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="mt-8 text-center text-xs text-slate-400 italic">
+              <p>Thank you for shopping with us!</p>
+              <p className="mt-1">Digital Bill Generated via POS Pro</p>
+            </div>
+          </div>
+
+          <div className="p-6 bg-slate-50 border-t flex gap-4 print:hidden">
+            <button className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-all">
+              <Share2 size={18} />
+              <span>WhatsApp</span>
+            </button>
+            <button 
+              onClick={handlePrint}
+              className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20"
+            >
+              <Printer size={18} />
+              <span>Print Bill</span>
+            </button>
+          </div>
+        </div>
+        <style>{`
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            #receipt-content, #receipt-content * {
+              visibility: visible;
+            }
+            #receipt-content {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+          }
+        `}</style>
+      </div>
+    );
+};
+
+export default ReceiptPreview;
