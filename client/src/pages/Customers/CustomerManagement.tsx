@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api/api';
 import { Users, UserPlus, Phone, Mail, Award, CreditCard } from 'lucide-react';
 
 interface Customer {
@@ -18,7 +18,7 @@ const CustomerManagement = () => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/customers');
+      const response = await api.get('/customers');
       setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { Search, ShoppingCart, User, CreditCard, Trash2, Plus, Minus, Scan, Maximize, Minimize, Camera, Wifi, WifiOff, X } from 'lucide-react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import axios from 'axios';
+import api from '../../api/api';
 import usePOSStore from '../../store/posStore';
 import PaymentModal from '../../components/PaymentModal';
 import ReceiptPreview from '../../components/ReceiptPreview';
@@ -28,7 +28,7 @@ const POSInterface: React.FC = () => {
     setLoading(true);
     try {
       if (isOnline) {
-        const response = await axios.get(`/api/products?search=${query}`);
+        const response = await api.get(`/products?search=${query}`);
         setProducts(response.data);
         // Cache products for offline use
         if (query === '') {
@@ -110,7 +110,7 @@ const POSInterface: React.FC = () => {
 
     try {
       if (isOnline) {
-        const response = await axios.post('/api/orders', orderData, {
+        const response = await api.post('/orders', orderData, {
           headers: { 'x-terminal-id': 'T1' }
         });
         setRecentOrder(response.data);

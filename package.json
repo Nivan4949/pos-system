@@ -1,10 +1,39 @@
 {
+  "name": "pos-billing-enterprise",
+  "version": "1.0.0",
+  "description": "Enterprise-grade Hybrid PWA POS",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "cd client && npm install && npm run build && cd ../server && npm install && npx prisma generate",
+    "start": "cd server && npm start",
+    "postinstall": "echo 'Root install complete. Cloud provider will run build script next.'"
+  },
   "dependencies": {
     "autoprefixer": "^10.4.27",
     "axios": "^1.13.6",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.577.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
     "zustand": "^5.0.11"
-  }
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nivan4949/pos-system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Nivan4949/pos-system/issues"
+  },
+  "homepage": "https://github.com/Nivan4949/pos-system#readme"
 }

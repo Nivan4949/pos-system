@@ -1,5 +1,5 @@
 import { offlineDB } from './offlineDB';
-import axios from 'axios';
+import api from '../api/api';
 
 const API_BASE_URL = '/api';
 
@@ -20,7 +20,7 @@ export const processSyncQueue = async () => {
   
   if (orders.length > 0) {
     try {
-      const response = await axios.post(`${API_BASE_URL}/sync/orders`, { 
+      const response = await api.post('/sync/orders', { 
         orders: orders.map(o => o.data) 
       });
       
@@ -44,7 +44,7 @@ export const processSyncQueue = async () => {
   for (const item of otherItems) {
     try {
       if (item.action === 'UPDATE_PRODUCT') {
-        await axios.put(`${API_BASE_URL}/products/${item.data.id}`, item.data);
+        await api.put(`/products/${item.data.id}`, item.data);
       }
       await offlineDB.delete('syncQueue', item.id);
     } catch (error) {

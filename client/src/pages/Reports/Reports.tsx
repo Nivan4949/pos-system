@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api/api';
 import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, ArrowUpRight } from 'lucide-react';
 
 const Reports = () => {
@@ -9,7 +9,7 @@ const Reports = () => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const response = await axios.get('/api/reports/summary');
+        const response = await api.get('/reports/summary');
         setSummary(response.data);
       } catch (error) {
         console.error('Error fetching summary:', error);

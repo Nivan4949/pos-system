@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, AlertTriangle, ArrowUpRight } from 'lucide-react';
 import { io } from 'socket.io-client';
-import axios from 'axios';
+import api from '../../api/api';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState<{
@@ -19,7 +19,7 @@ const AdminDashboard = () => {
 
     const fetchStats = async () => {
         try {
-            const response = await axios.get('/api/reports/summary');
+            const response = await api.get('/reports/summary');
             setStats(prev => ({ ...prev, ...response.data }));
         } catch (error) {
             console.error('Dashboard Error:', error);

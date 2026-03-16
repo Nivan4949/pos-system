@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api/api';
 import { Plus, Edit2, Trash2, Search, Package } from 'lucide-react';
 import { Product } from '../../types';
 import ProductModal from '../../components/ProductModal';
@@ -14,7 +14,7 @@ const ProductManagement = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`/api/products?search=${search}`);
+      const response = await api.get(`/products?search=${search}`);
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -40,7 +40,7 @@ const ProductManagement = () => {
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this product?')) {
       try {
-        await axios.delete(`/api/products/${id}`);
+        await api.delete(`/products/${id}`);
         fetchProducts();
       } catch (error) {
         console.error('Error deleting product:', error);

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const prisma = require('../config/prisma');
+const auth = require('../middleware/auth');
 
 // Get all products with search and category filter
 router.get('/', async (req, res) => {
@@ -30,24 +31,37 @@ router.get('/', async (req, res) => {
 });
 
 // Create product
-router.post('/', async (req, res) => {
+router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
+    const data = { ...req.body };
+    // Handle barcode unique constraint (all falsy -> null)
+    data.barcode = data.barcode || null;
+    
+    console.log('Creating product with data:', JSON.stringify(data, null, 2));
+    
     const product = await prisma.product.create({
-      data: req.body
+      data: data
     });
     res.json(product);
   } catch (error) {
+    console.error('Prisma Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // Update product
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { id } = req.params;
+    const data = { ...req.body };
+    // Handle barcode unique constraint (empty string -> null)
+    if (data.barcode === '') {
+      data.barcode = null;
+    }
+
     const product = await prisma.product.update({
       where: { id },
-      data: req.body
+      data: data
     });
     res.json(product);
   } catch (error) {
@@ -56,7 +70,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete product
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth(['ADMIN']), async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.product.delete({ where: { id } });

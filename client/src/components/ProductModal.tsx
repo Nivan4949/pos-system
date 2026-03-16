@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
 import axios from 'axios';
+import api from '../api/api';
 import { Product } from '../types';
 
 interface ProductModalProps {
@@ -26,14 +27,15 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
     e.preventDefault();
     try {
       if (product?.id) {
-        await axios.put(`/api/products/${product.id}`, formData);
+        await api.put(`/products/${product.id}`, formData);
       } else {
-        await axios.post('/api/products', formData);
+        await api.post('/products', formData);
       }
       onSave();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving product:', error);
-      alert('Failed to save product');
+      const message = error.response?.data?.error || 'Failed to save product';
+      alert(message);
     }
   };
 

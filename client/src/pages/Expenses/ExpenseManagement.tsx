@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api/api';
 import { Wallet, Plus, Calendar, Tag, CreditCard } from 'lucide-react';
 
 const ExpenseManagement = () => {
@@ -9,7 +9,7 @@ const ExpenseManagement = () => {
   const fetchExpenses = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/expenses');
+      const response = await api.get('/expenses');
       setExpenses(response.data);
     } catch (error) {
       console.error('Error fetching expenses:', error);
