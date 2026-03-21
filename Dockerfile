@@ -19,4 +19,5 @@ EXPOSE 5000
 
 ENV NODE_ENV=production
 
-CMD ["cd", "backend", "&&", "npm", "start"]
+WORKDIR /app/backend
+CMD ["npm", "start"]
