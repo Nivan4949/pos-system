@@ -65,6 +65,7 @@ model Product {
   unit           String         @default("pcs")
   supplier       String?
   image          String?
+  is_active      Boolean        @default(true)
   orderItems     OrderItem[]
   inventoryLogs  InventoryLog[]
   createdAt      DateTime       @default(now())
@@ -79,6 +80,7 @@ model Customer {
   loyaltyPoints Int      @default(0)
   creditBalance Float    @default(0)
   orders        Order[]
+  is_active     Boolean  @default(true)
   isSynced      Boolean  @default(false)
   serverId      String?  @unique
   createdAt     DateTime @default(now())

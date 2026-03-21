@@ -15,6 +15,7 @@ export interface Product {
   stockQuantity: number;
   unit: string;
   image?: string;
+  is_active?: boolean;
 }
 
 export interface CartItem extends Product {

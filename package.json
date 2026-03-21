@@ -11,6 +11,7 @@
     "postinstall": "echo 'Root install complete. Cloud provider will run build script next.'"
   },
   "dependencies": {
+    "@prisma/client": "^5.10.2",
     "autoprefixer": "^10.4.27",
     "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
@@ -20,6 +21,7 @@
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.577.0",
     "postcss": "^8.5.8",
+    "postgres": "^3.4.8",
     "tailwindcss": "^4.2.1",
     "zustand": "^5.0.11"
   },
@@ -35,5 +37,8 @@
   "bugs": {
     "url": "https://github.com/Nivan4949/pos-system/issues"
   },
-  "homepage": "https://github.com/Nivan4949/pos-system#readme"
+  "homepage": "https://github.com/Nivan4949/pos-system#readme",
+  "devDependencies": {
+    "prisma": "^5.10.2"
+  }
 }

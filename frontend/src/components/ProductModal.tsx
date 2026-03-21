@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { X, Save } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Save, Printer } from 'lucide-react';
 import axios from 'axios';
 import api from '../api/api';
 import { Product } from '../types';
+import JsBarcode from 'jsbarcode';
 
 interface ProductModalProps {
   product?: Product | null;
@@ -22,6 +23,21 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
       unit: 'pcs',
     }
   );
+  
+  const barcodeRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (barcodeRef.current && formData.barcode) {
+      JsBarcode(barcodeRef.current, formData.barcode, {
+        format: "CODE128",
+        width: 1.5,
+        height: 40,
+        displayValue: true,
+        margin: 0,
+        fontSize: 14
+      });
+    }
+  }, [formData.barcode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,12 +80,60 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Barcode</label>
-              <input
-                type="text"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono"
-                value={formData.barcode || ''}
-                onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                  value={formData.barcode || ''}
+                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                />
+                <button 
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await api.post('/products/generate-barcode');
+                      setFormData(prev => ({ ...prev, barcode: res.data.barcode }));
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  }}
+                  className="px-4 bg-slate-100 text-slate-600 rounded-lg whitespace-nowrap hover:bg-slate-200 font-bold transition-colors"
+                >
+                  Generate
+                </button>
+              </div>
+              {formData.barcode && (
+                <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg text-center flex flex-col items-center">
+                  <svg ref={barcodeRef} className="max-w-full"></svg>
+                  <button type="button" onClick={() => {
+                        const printWindow = window.open('', '_blank');
+                        const svgHtml = barcodeRef.current?.outerHTML || '';
+                        printWindow?.document.write(`
+                          <html>
+                            <head><title>Print Barcode Label</title>
+                            <style>
+                              @page { margin: 0; size: 2in 1in; }
+                              body { margin: 0; padding:0; display:flex; flex-direction:column; align-items:center; justify-content:center; width:2in; height:1in; font-family:sans-serif;}
+                              .label { text-align:center; padding-top: 5px; width: 100%; box-sizing: border-box; }
+                              .name { font-size: 11px; font-weight: bold; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px; }
+                              .price { font-size: 11px; margin-top: 2px; font-weight: bold; }
+                              svg { width: 90%; max-height: 40px; }
+                            </style>
+                            </head>
+                            <body>
+                              <div class="label">
+                                <div class="name">${formData.name || 'Product'}</div>
+                                ${svgHtml}
+                                <div class="price">Rs. ${formData.sellingPrice || 0}</div>
+                              </div>
+                              <script>window.print(); setTimeout(() => window.close(), 500);</script>
+                            </body>
+                          </html>
+                        `);
+                        printWindow?.document.close();
+                  }} className="mt-3 flex items-center justify-center gap-1 w-full py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 text-sm font-bold transition-colors"><Printer size={16}/> Print Thermal Label</button>
+                </div>
+              )}
             </div>
 
             <div>

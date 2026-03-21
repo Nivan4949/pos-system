@@ -28,7 +28,7 @@ const POSInterface: React.FC = () => {
     setLoading(true);
     try {
       if (isOnline) {
-        const response = await api.get(`/products?search=${query}`);
+        const response = await api.get(`/products?search=${query}&activeOnly=true`);
         setProducts(response.data);
         // Cache products for offline use
         if (query === '') {
@@ -94,6 +94,43 @@ const POSInterface: React.FC = () => {
       };
     }
   }, [showScanner, products]);
+
+  // Global Keyboard Barcode Scanner Listener
+  useEffect(() => {
+    let barcodeBuffer = '';
+    let timeout: NodeJS.Timeout;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't interfere if user is typing in an input
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.length > 3) {
+          const product = products.find(p => p.barcode === barcodeBuffer);
+          if (product) {
+            addToCart(product);
+          } else {
+            console.warn('Barcode scanned but no product found:', barcodeBuffer);
+          }
+        }
+        barcodeBuffer = '';
+      } else if (e.key.length === 1) {
+        barcodeBuffer += e.key;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          barcodeBuffer = ''; // Reset if typing is too slow (not a scanner)
+        }, 80); // Scanners type very fast
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timeout);
+    };
+  }, [products, addToCart]);
 
   const handlePaymentComplete = async (method: string, amount: string) => {
     const { subtotal, taxTotal, grandTotal } = getTotals();

@@ -9,6 +9,7 @@ interface Customer {
   email: string | null;
   loyaltyPoints: number;
   creditBalance: number;
+  is_active?: boolean;
 }
 
 const CustomerManagement = () => {
@@ -30,6 +31,15 @@ const CustomerManagement = () => {
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      await api.put(`/customers/inactive/${id}`, { is_active: !currentStatus });
+      fetchCustomers();
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    }
+  };
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen font-sans">
@@ -55,12 +65,22 @@ const CustomerManagement = () => {
                   <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center font-bold text-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
                     {customer.name.charAt(0)}
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="flex items-center gap-1 text-orange-500 font-black">
-                      <Award size={16} />
-                      {customer.loyaltyPoints}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Loyalty Points</span>
+                  <div className="flex flex-col items-end gap-2">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleToggleActive(customer.id, customer.is_active ?? true); }} 
+                      className={`px-2 py-1 rounded-lg text-xs font-bold border transition-colors ${
+                        customer.is_active !== false ? 'text-green-600 border-green-200 bg-green-50 hover:bg-green-100' : 'text-slate-500 border-slate-200 bg-slate-50 hover:bg-slate-100'
+                      }`}
+                    >
+                      {customer.is_active !== false ? 'Active' : 'Inactive'}
+                    </button>
+                    <div className="flex flex-col items-end">
+                      <span className="flex items-center gap-1 text-orange-500 font-black">
+                        <Award size={16} />
+                        {customer.loyaltyPoints}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Loyalty Points</span>
+                    </div>
                   </div>
                 </div>
 

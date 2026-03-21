@@ -109,17 +109,32 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
         </div>
         <style>{`
           @media print {
+            @page {
+              margin: 0;
+              size: 80mm 297mm; /* Standard 80mm thermal paper width */
+            }
+            body {
+              width: 80mm;
+              margin: 0 auto;
+              background-color: white;
+            }
             body * {
               visibility: hidden;
             }
             #receipt-content, #receipt-content * {
               visibility: visible;
+              color: black !important;
             }
             #receipt-content {
               position: absolute;
               left: 0;
               top: 0;
-              width: 100%;
+              width: 80mm;
+              padding: 5mm !important;
+              font-family: monospace;
+            }
+            .print\\:hidden {
+              display: none !important;
             }
           }
         `}</style>

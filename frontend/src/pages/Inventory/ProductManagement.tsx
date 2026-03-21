@@ -48,6 +48,15 @@ const ProductManagement = () => {
     }
   };
 
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      await api.put(`/products/inactive/${id}`, { is_active: !currentStatus });
+      fetchProducts();
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    }
+  };
+
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -86,6 +95,7 @@ const ProductManagement = () => {
                 <th className="px-6 py-4 font-semibold">Category</th>
                 <th className="px-6 py-4 font-semibold">Price</th>
                 <th className="px-6 py-4 font-semibold">Stock</th>
+                <th className="px-6 py-4 font-semibold">Status</th>
                 <th className="px-6 py-4 font-semibold">Actions</th>
               </tr>
             </thead>
@@ -119,6 +129,16 @@ const ProductManagement = () => {
                       }`}>
                         {product.stockQuantity} {product.unit}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button 
+                        onClick={() => handleToggleActive(product.id, product.is_active ?? true)}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-colors border ${
+                          product.is_active !== false ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100' : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {product.is_active !== false ? 'Active' : 'Inactive'}
+                      </button>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">

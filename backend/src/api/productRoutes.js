@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 // Get all products with search and category filter
 router.get('/', async (req, res) => {
   try {
-    const { search, categoryId } = req.query;
+    const { search, categoryId, activeOnly } = req.query;
     const products = await prisma.product.findMany({
       where: {
         AND: [
@@ -16,7 +16,8 @@ router.get('/', async (req, res) => {
               { barcode: { contains: search } }
             ]
           } : {},
-          categoryId ? { categoryId } : {}
+          categoryId ? { categoryId } : {},
+          activeOnly === 'true' ? { is_active: true } : {}
         ]
       },
       include: {
@@ -34,8 +35,10 @@ router.get('/', async (req, res) => {
 router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const data = { ...req.body };
-    // Handle barcode unique constraint (all falsy -> null)
-    data.barcode = data.barcode || null;
+    // Handle barcode unique constraint: if not provided, generate uniquely
+    if (!data.barcode || data.barcode.trim() === '') {
+      data.barcode = 'PRD-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    }
     
     console.log('Creating product with data:', JSON.stringify(data, null, 2));
     
@@ -75,6 +78,53 @@ router.delete('/:id', auth(['ADMIN']), async (req, res) => {
     const { id } = req.params;
     await prisma.product.delete({ where: { id } });
     res.json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Toggle product active status
+router.put('/inactive/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_active } = req.body;
+    if (is_active === undefined) return res.status(400).json({ message: 'is_active is required' });
+    
+    const product = await prisma.product.update({
+      where: { id },
+      data: { is_active }
+    });
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Generate Barcode
+router.post('/generate-barcode', auth(['ADMIN', 'MANAGER']), async (req, res) => {
+  try {
+    const uniqueBarcode = 'PRD-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    res.json({ barcode: uniqueBarcode });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Scan Barcode
+router.post('/scan-barcode', async (req, res) => {
+  try {
+    const { barcode } = req.body;
+    if (!barcode) return res.status(400).json({ message: 'Barcode is required' });
+    
+    const product = await prisma.product.findUnique({
+      where: { barcode },
+      include: { category: true }
+    });
+    
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!product.is_active) return res.status(400).json({ message: 'Product is inactive' });
+    
+    res.json(product);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
