@@ -1,5 +1,8 @@
 FROM node:20-slim AS builder
 
+# Install OpenSSL required by Prisma engine
+RUN apt-get update -y && apt-get install -y openssl
+
 WORKDIR /app
 
 # Install dependencies and build frontend
