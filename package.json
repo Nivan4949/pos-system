@@ -6,7 +6,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "cd frontend && npm install && npm run build && cd .. && mkdir -p dist && cp -R frontend/dist/* dist/ && cd backend && npm install && npx prisma generate --schema=../database/schema/schema.prisma",
+    "build": "cd frontend && npx vite build && cd .. && mkdir -p dist && cp -R frontend/dist/* dist/ && npx prisma generate --schema=database/schema/schema.prisma",
     "start": "node api/index.js",
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "postinstall": "echo 'Vercel Environment Ready'"
@@ -14,33 +14,37 @@
   "dependencies": {
     "@prisma/client": "^5.10.2",
     "autoprefixer": "^10.4.27",
-    "axios": "^1.13.6",
+    "axios": "^1.7.9",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "html5-qrcode": "^2.3.8",
+    "jsbarcode": "^3.12.3",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.577.0",
+    "morgan": "^1.10.1",
     "postcss": "^8.5.8",
     "postgres": "^3.4.8",
-    "tailwindcss": "^4.2.1",
-    "zustand": "^5.0.11"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.13.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "sqlite3": "^6.0.1",
+    "tailwindcss": "^3.4.17",
+    "zustand": "^5.0.3"
   },
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Nivan4949/pos-system.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Nivan4949/pos-system/issues"
-  },
-  "homepage": "https://github.com/Nivan4949/pos-system#readme",
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.2.1",
-    "prisma": "^5.10.2"
+    "idb": "^8.0.3",
+    "nodemon": "^3.1.14",
+    "prisma": "^5.10.2",
+    "vite": "^6.0.7",
+    "vite-plugin-pwa": "^2.0.5"
   }
 }
