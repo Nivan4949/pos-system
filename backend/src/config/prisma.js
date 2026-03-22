@@ -11,7 +11,7 @@ const getDbUrl = () => {
   const password = "POSFreshnaad123"; 
   const projectId = "genbvbumxbmslhakulkz";
   
-  return `postgresql://postgres.${projectId}:${password}@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true&statement_cache_size=0`;
+  return `postgresql://postgres.${projectId}:${password}@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true&statement_cache_size=0`;
 };
 
 const prisma = new PrismaClient({
