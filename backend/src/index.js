@@ -33,44 +33,36 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/licenses', require('./api/licenseRoutes'));
 app.use('/api/devices', require('./api/deviceRoutes'));
 
-const http = require('http');
-const path = require('path');
-const { Server } = require('socket.io');
-
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-  }
-});
-
-app.set('io', io);
-
-// Serve Static Files (Production)
-const clientPath = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(clientPath));
-
 // Health Check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'POS Billing System API is running' });
+  res.json({ status: 'ok', message: 'POS Billing System API is running on Vercel' });
 });
 
-// SPA Routing: Redirect all other requests to index.html
-app.use((req, res) => {
-  res.sendFile(path.join(clientPath, 'index.html'));
-});
-
-io.on('connection', (socket) => {
-  console.log('Terminal connected:', socket.id);
-  
-  socket.on('disconnect', () => {
-    console.log('Terminal disconnected');
+// Socket.io initialization (Conditional for Local Dev)
+let io;
+if (!process.env.VERCEL) {
+  const http = require('http');
+  const { Server } = require('socket.io');
+  const server = http.createServer(app);
+  io = new Server(server, {
+    cors: { origin: '*' }
   });
-});
+  app.set('io', io);
 
-// Start Server
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Enterprise POS is LIVE on Port ${PORT}`);
-  console.log(`Local Access: http://localhost:${PORT}`);
-  console.log(`Global Strategy: Serving Unified Production Build`);
-});
+  io.on('connection', (socket) => {
+    console.log('Terminal connected:', socket.id);
+    socket.on('disconnect', () => console.log('Terminal disconnected'));
+  });
+
+  // Start Server Locally
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Enterprise POS is LIVE on Port ${PORT}`);
+    console.log(`Local Access: http://localhost:${PORT}`);
+    console.log(`Global Strategy: Serving Unified Production Build`);
+  });
+} else {
+  // In Vercel, we just export the app
+  console.log('Vercel Serverless: App instance exported');
+}
+
+module.exports = app;
