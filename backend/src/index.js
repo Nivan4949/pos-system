@@ -3,6 +3,9 @@ const cors = require('cors');
 const morgan = require('morgan');
 require('dotenv').config();
 
+// Prisma Connection Pooling Fix: Ensure stable serverless DB access on Vercel
+// Requires ?pgbouncer=true&statement_cache_size=0 in DATABASE_URL
+
 const productRoutes = require('./api/productRoutes');
 const orderRoutes = require('./api/orderRoutes');
 const customerRoutes = require('./api/customerRoutes');
