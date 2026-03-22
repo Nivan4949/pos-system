@@ -6,7 +6,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install && npx prisma generate --schema=../database/schema/schema.prisma",
+    "build": "cd frontend && npm install && npm run build && cd .. && mkdir -p dist && cp -R frontend/dist/* dist/ && cd backend && npm install && npx prisma generate --schema=../database/schema/schema.prisma",
     "start": "node api/index.js",
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "postinstall": "echo 'Vercel Environment Ready'"
