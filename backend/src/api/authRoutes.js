@@ -26,45 +26,6 @@ router.post('/login', async (req, res) => {
        }
     }
 
-    // 1. License Check
-    if (user.license) {
-      if (user.license.status !== 'ACTIVE') {
-        return res.status(403).json({ message: `License is ${user.license.status.toLowerCase()}` });
-      }
-      if (new Date(user.license.expiryDate) < new Date()) {
-        return res.status(403).json({ message: 'License has expired' });
-      }
-    } else {
-      // In SaaS mode, everyone needs a license unless it's the root admin
-      if (user.role !== 'ADMIN') {
-        return res.status(403).json({ message: 'No active license found for this user' });
-      }
-    }
-
-    // 2. Device Check
-    if (deviceId && user.role !== 'ADMIN') {
-        let device = await prisma.device.findUnique({ where: { deviceId } });
-        
-        if (!device) {
-            return res.status(403).json({ 
-                message: 'Device not registered', 
-                type: 'DEVICE_UNREGISTERED',
-                deviceId 
-            });
-        }
-        
-        if (!device.authorized) {
-            return res.status(403).json({ message: 'Device waiting for authorization' });
-        }
-
-        // Link device and user if not already
-        if (!device.userId) {
-            await prisma.device.update({
-                where: { deviceId },
-                data: { userId: user.id, licenseId: user.licenseId }
-            });
-        }
-    }
 
     const token = jwt.sign(
       { id: user.id, role: user.role, licenseId: user.licenseId }, 
