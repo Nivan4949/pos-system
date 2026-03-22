@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { Plus, Search, Edit2, Trash2, Package } from 'lucide-react';
 import api from '../../api/api';
-import { Plus, Edit2, Trash2, Search, Package } from 'lucide-react';
-import { Product } from '../../types';
 import ProductModal from '../../components/ProductModal';
+import { Product } from '../../types';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/products?search=${search}`);
+      const response = await api.get('/products');
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -25,20 +25,24 @@ const ProductManagement = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [search]);
+  }, []);
 
   const handleEdit = (product: Product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
 
-  const handleAddNew = () => {
-    setSelectedProduct(null);
-    setIsModalOpen(true);
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      await api.patch(`/products/${id}`, { is_active: !currentStatus });
+      fetchProducts();
+    } catch (error) {
+      console.error('Error toggling product status:', error);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this product?')) {
+    if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await api.delete(`/products/${id}`);
         fetchProducts();
@@ -48,47 +52,43 @@ const ProductManagement = () => {
     }
   };
 
-  const handleToggleActive = async (id: string, currentStatus: boolean) => {
-    try {
-      await api.put(`/products/inactive/${id}`, { is_active: !currentStatus });
-      fetchProducts();
-    } catch (error) {
-      console.error('Error toggling status:', error);
-    }
-  };
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase()) || 
+    p.barcode?.includes(search)
+  );
 
   return (
-    <div className="p-8 bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Inventory Management</h1>
-            <p className="text-slate-500">Manage your products, stock levels, and pricing.</p>
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Inventory Management</h1>
+          <p className="text-slate-500">Manage your product catalog and stock levels</p>
+        </div>
+        <button 
+          onClick={() => { setSelectedProduct(null); setIsModalOpen(true); }}
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+        >
+          <Plus size={20} />
+          <span>Add Product</span>
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="p-4 md:p-6 border-b border-slate-100">
+          <div className="relative max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search products by name or barcode..."
+              className="w-full pl-12 pr-4 py-2 bg-slate-50 rounded-lg border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <button 
-            onClick={handleAddNew}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
-          >
-            <Plus size={20} />
-            <span>Add New Product</span>
-          </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search products by name or barcode..."
-                className="w-full pl-12 pr-4 py-2 bg-slate-50 rounded-lg border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <table className="w-full text-left">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-sm uppercase tracking-wider">
                 <th className="px-6 py-4 font-semibold">Product Details</th>
@@ -96,29 +96,29 @@ const ProductManagement = () => {
                 <th className="px-6 py-4 font-semibold">Price</th>
                 <th className="px-6 py-4 font-semibold">Stock</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold">Actions</th>
+                <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-20 text-slate-400 animate-pulse">Loading items...</td>
+                  <td colSpan={6} className="text-center py-20 text-slate-400 animate-pulse">Loading items...</td>
                 </tr>
-              ) : products.length > 0 ? (
-                products.map((product) => (
+              ) : filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
                   <tr key={product.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400">
+                        <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 shrink-0">
                           <Package size={24} />
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-800">{product.name}</p>
-                          <p className="text-xs text-slate-400 font-mono">{product.barcode || 'NO BARCODE'}</p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-800 truncate">{product.name}</p>
+                          <p className="text-xs text-slate-400 font-mono truncate">{product.barcode || 'NO BARCODE'}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-600">{product.category?.name || 'General'}</td>
+                    <td className="px-6 py-4 text-slate-600 truncate">{product.category?.name || 'General'}</td>
                     <td className="px-6 py-4">
                       <p className="font-bold text-slate-800">₹{product.sellingPrice.toFixed(2)}</p>
                       <p className="text-xs text-slate-400">Cost: ₹{product.purchasePrice.toFixed(2)}</p>
@@ -140,8 +140,8 @@ const ProductManagement = () => {
                         {product.is_active !== false ? 'Active' : 'Inactive'}
                       </button>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => handleEdit(product)}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -160,7 +160,7 @@ const ProductManagement = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="text-center py-20 text-slate-400">No products found in inventory</td>
+                  <td colSpan={6} className="text-center py-20 text-slate-400">No products found</td>
                 </tr>
               )}
             </tbody>
@@ -171,7 +171,7 @@ const ProductManagement = () => {
       {isModalOpen && (
         <ProductModal 
           product={selectedProduct}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => setIsModalOpen(true)}
           onSave={() => {
             setIsModalOpen(false);
             fetchProducts();

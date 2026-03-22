@@ -31,7 +31,14 @@ const AdminDashboard = () => {
     useEffect(() => {
         fetchStats();
 
-        const socket = io(`http://${window.location.hostname}:5000`);
+        const socketUrl = `${window.location.protocol}//${window.location.host}`;
+        const socket = io(socketUrl, {
+            transports: ['polling', 'websocket'],
+            autoConnect: true
+        });
+
+        socket.on('connect', () => console.log('Admin Socket Connected'));
+        socket.on('connect_error', (err) => console.log('Admin Socket Error:', err.message));
         
         const handleOrderCreated = (order: any) => {
             setStats(prev => ({

@@ -175,65 +175,59 @@ const POSInterface: React.FC = () => {
   const { subtotal, taxTotal, grandTotal } = getTotals();
 
   return (
-    <div className="flex flex-col h-screen bg-slate-100 font-sans text-slate-800 overflow-hidden">
+    <div className="flex flex-col h-screen bg-slate-100 font-sans text-slate-800 overflow-hidden relative">
       {/* Top Header */}
-      <header className="bg-blue-600 text-white p-3 flex justify-between items-center shadow-md select-none">
+      <header className="bg-blue-600 text-white p-3 flex justify-between items-center shadow-md select-none shrink-0">
         <div className="flex items-center gap-2">
           <div className="bg-white text-blue-600 p-1 rounded font-bold text-xl">POS</div>
-          <span className="font-semibold tracking-tight">Retail Pro v1.0</span>
+          <span className="font-semibold tracking-tight hidden sm:block">Retail Pro v1.0</span>
         </div>
-        <div className="flex items-center gap-4">
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${isOnline ? 'bg-green-500/10 border-green-500/50 text-green-400' : 'bg-red-500/10 border-red-500/50 text-red-400'}`}>
-            {isOnline ? <Wifi size={14} /> : <WifiOff size={14} />}
-            <span>{isOnline ? 'ONLINE' : 'OFFLINE MODE'}</span>
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className={`flex items-center gap-2 px-2 md:px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border ${isOnline ? 'bg-green-500/10 border-green-500/50 text-green-400' : 'bg-red-500/10 border-red-500/50 text-red-400'}`}>
+            {isOnline ? <Wifi size={12} /> : <WifiOff size={12} />}
+            <span className="hidden xs:block">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
           </div>
           <button 
             onClick={toggleFullscreen}
-            className="p-2 hover:bg-blue-700 rounded-lg transition-all"
+            className="p-1.5 md:p-2 hover:bg-blue-700 rounded-lg transition-all hidden xs:block"
             title="Toggle Fullscreen"
           >
-            {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+            {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
           </button>
-          <button className="flex items-center gap-1 bg-blue-700 px-3 py-1 rounded hover:bg-blue-800 transition-colors">
-            <User size={18} />
-            <span>Cashier Mode</span>
-          </button>
-          <div className="text-sm font-light">
+          <div className="text-[10px] md:text-sm font-light hidden lg:block">
             {new Date().toLocaleDateString()} | {new Date().toLocaleTimeString()}
           </div>
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left Side - Product Selection (60%) */}
-        <section className="w-3/5 flex flex-col p-4 gap-4 overflow-hidden border-r border-slate-200">
+      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* Left Side - Product Selection */}
+        <section className="flex-1 lg:w-3/5 flex flex-col p-3 md:p-4 gap-3 md:gap-4 overflow-hidden border-b lg:border-r border-slate-200">
           <div className="relative group flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
               <input
                 type="text"
-                placeholder="Search by name or scan barcode..."
-                className="w-full pl-12 pr-4 py-3 bg-white rounded-xl shadow-sm border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg transition-all"
+                placeholder="Search products..."
+                className="w-full pl-10 pr-4 py-2.5 md:py-3 bg-white rounded-xl shadow-sm border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base md:text-lg transition-all"
                 value={search}
                 onChange={handleSearch}
-                autoFocus
               />
             </div>
             <button 
               onClick={() => setShowScanner(!showScanner)}
-              className={`px-4 rounded-xl shadow-sm border transition-all flex items-center justify-center ${showScanner ? 'bg-red-50 border-red-200 text-red-600' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-400'}`}
-              title="Camera Scanner"
+              className={`px-3 md:px-4 rounded-xl shadow-sm border transition-all flex items-center justify-center ${showScanner ? 'bg-red-50 border-red-200 text-red-600' : 'bg-white border-slate-200 text-slate-600 hover:border-blue-400'}`}
             >
-              <Camera size={24} />
+              <Camera size={20} />
             </button>
           </div>
 
           {showScanner && (
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-inner relative animate-in fade-in zoom-in-95">
-              <div id="reader" className="overflow-hidden rounded-lg"></div>
+            <div className="bg-white p-2 md:p-4 rounded-xl border border-slate-200 shadow-inner relative animate-in fade-in zoom-in-95">
+              <div id="reader" className="overflow-hidden rounded-lg min-h-[200px]"></div>
               <button 
                 onClick={() => setShowScanner(false)}
-                className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-all"
+                className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70 transition-all z-10"
               >
                 <X size={20} />
               </button>
@@ -241,54 +235,52 @@ const POSInterface: React.FC = () => {
           )}
 
           {/* Product Grid */}
-          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="flex-1 overflow-y-auto pr-1 md:pr-2 custom-scrollbar">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
               {loading ? (
-                <div className="col-span-full text-center py-20 text-slate-400 animate-pulse">Loading products...</div>
+                <div className="col-span-full text-center py-10 md:py-20 text-slate-400 animate-pulse">Loading...</div>
               ) : products.length > 0 ? (
                 products.map((product) => (
                   <button
                     key={product.id}
                     onClick={() => addToCart(product)}
-                    className="flex flex-col bg-white rounded-xl p-3 shadow-sm border border-transparent hover:border-blue-400 hover:shadow-md active:scale-95 transition-all text-left group"
+                    className="flex flex-col bg-white rounded-xl p-2 md:p-3 shadow-sm border border-transparent hover:border-blue-400 hover:shadow-md active:scale-95 transition-all text-left group"
                   >
-                    <div className="w-full h-32 bg-slate-50 mb-2 rounded-lg flex items-center justify-center overflow-hidden">
+                    <div className="w-full h-24 md:h-32 bg-slate-50 mb-2 rounded-lg flex items-center justify-center overflow-hidden">
                       {product.image ? (
                         <img src={product.image} alt={product.name} className="object-contain" />
                       ) : (
-                        <div className="text-slate-300 font-bold text-4xl select-none group-hover:text-blue-200 transition-colors">{product.name.charAt(0)}</div>
+                        <div className="text-slate-300 font-bold text-3xl md:text-4xl select-none group-hover:text-blue-200 transition-colors uppercase">{product.name.charAt(0)}</div>
                       )}
                     </div>
-                    <div className="font-semibold text-slate-700 truncate mb-1">{product.name}</div>
-                    <div className="text-blue-600 font-bold text-lg">₹{product.sellingPrice.toFixed(2)}</div>
-                    <div className="text-xs text-slate-400 mt-1 flex justify-between items-end">
-                      <span>Stock: {product.stockQuantity}</span>
-                      <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase">{product.unit}</span>
+                    <div className="font-semibold text-slate-700 truncate text-xs md:text-sm mb-0.5">{product.name}</div>
+                    <div className="text-blue-600 font-bold text-sm md:text-lg">₹{product.sellingPrice.toFixed(2)}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5 flex justify-between items-end">
+                      <span className="truncate">Stock: {product.stockQuantity}</span>
                     </div>
                   </button>
                 ))
               ) : (
-                <div className="col-span-full text-center py-20 text-slate-400">No products found</div>
+                <div className="col-span-full text-center py-20 text-slate-400">No products</div>
               )}
             </div>
           </div>
         </section>
 
-        {/* Right Side - Cart & Billing (40%) */}
-        <section className="w-2/5 flex flex-col bg-white shadow-xl overflow-hidden">
+        {/* Right Side - Cart & Billing */}
+        <section id="cart-section" className="w-full lg:w-2/5 flex flex-col bg-white shadow-xl overflow-hidden lg:h-full max-h-[50vh] lg:max-h-none">
           {/* Cart Header */}
-          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="p-3 md:p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
             <div className="flex items-center gap-2">
-              <ShoppingCart size={22} className="text-blue-600" />
-              <h2 className="font-bold text-lg text-slate-700">Billing Cart</h2>
-              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-bold">{cart.length} ITEMS</span>
+              <ShoppingCart size={18} className="text-blue-600 md:hidden" />
+              <ShoppingCart size={22} className="text-blue-600 hidden md:block" />
+              <h2 className="font-bold text-base md:text-lg text-slate-700">Cart ({cart.length})</h2>
             </div>
             <button 
               onClick={clearCart}
-              className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors group"
-              title="Clear Cart"
+              className="text-red-500 hover:bg-red-50 p-1.5 md:p-2 rounded-lg transition-colors group"
             >
-              <Trash2 size={20} className="group-hover:scale-110 transition-transform" />
+              <Trash2 size={18} className="md:w-5 md:h-5" />
             </button>
           </div>
 
@@ -297,83 +289,91 @@ const POSInterface: React.FC = () => {
             {cart.length > 0 ? (
               <div className="divide-y divide-slate-50">
                 {cart.map((item: CartItem) => (
-                  <div key={item.id} className="p-4 hover:bg-slate-50/50 transition-colors flex gap-4 animate-in fade-in slide-in-from-right-4">
-                    <div className="flex-1">
-                      <div className="font-medium text-slate-800 mb-1">{item.name}</div>
-                      <div className="text-sm text-slate-500 flex items-center gap-2">
+                  <div key={item.id} className="p-3 md:p-4 hover:bg-slate-50/50 transition-colors flex gap-3 md:gap-4 animate-in fade-in slide-in-from-right-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-slate-800 text-sm md:text-base truncate">{item.name}</div>
+                      <div className="text-xs md:text-sm text-slate-500 flex items-center gap-1.5">
                          <span>₹{item.sellingPrice.toFixed(2)}</span>
                          <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-                         <span className="text-xs font-medium text-slate-400 underline decoration-slate-200 uppercase tracking-wider">{item.category?.name || 'General'}</span>
+                         <span className="truncate">{item.category?.name || 'General'}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="flex items-center bg-slate-100 rounded-lg p-1">
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="flex items-center bg-slate-100 rounded-lg p-0.5 md:p-1">
                         <button 
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-slate-500 transition-all font-bold"
+                          className="w-6 md:w-8 h-6 md:h-8 flex items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-slate-500"
                         >
-                          <Minus size={14} strokeWidth={3} />
+                          <Minus size={12} strokeWidth={3} />
                         </button>
-                        <span className="w-10 text-center font-bold text-slate-700">{item.quantity}</span>
+                        <span className="w-6 md:w-10 text-center font-bold text-xs md:text-base text-slate-700">{item.quantity}</span>
                         <button 
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-slate-600 transition-all font-bold"
+                          className="w-6 md:w-8 h-6 md:h-8 flex items-center justify-center rounded-md hover:bg-white hover:shadow-sm text-slate-600"
                         >
-                          <Plus size={14} strokeWidth={3} />
+                          <Plus size={12} strokeWidth={3} />
                         </button>
                       </div>
-                      <div className="font-bold text-slate-900">₹{(item.sellingPrice * item.quantity).toFixed(2)}</div>
+                      <div className="font-bold text-slate-900 text-xs md:text-base">₹{(item.sellingPrice * item.quantity).toFixed(2)}</div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-slate-300 opacity-60">
-                 <ShoppingCart size={80} strokeWidth={1} className="mb-4" />
-                 <p className="text-lg font-medium">Your cart is empty</p>
-                 <p className="text-sm">Scan a barcode or search for products</p>
+              <div className="flex flex-col items-center justify-center py-10 text-slate-300 opacity-60">
+                 <ShoppingCart size={40} strokeWidth={1} className="mb-2" />
+                 <p className="text-sm font-medium">Cart is empty</p>
               </div>
             )}
           </div>
 
           {/* Bill Summary */}
-          <div className="p-6 bg-slate-900 text-white rounded-t-3xl shadow-2xl">
-            <div className="space-y-3 mb-6">
-              <div className="flex justify-between text-slate-400 font-medium">
-                <span>Subtotal</span>
-                <span className="text-white">₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-400 font-medium">
-                <span>GST Tax</span>
-                <span className="text-white">₹{taxTotal.toFixed(2)}</span>
+          <div className="p-4 md:p-6 bg-slate-900 text-white rounded-t-2xl md:rounded-t-3xl shadow-2xl shrink-0">
+            <div className="space-y-2 mb-4 md:mb-6">
+              <div className="flex justify-between text-xs md:text-sm text-slate-400">
+                <span>Total Items</span>
+                <span className="text-white font-bold">{cart.length}</span>
               </div>
               <div className="h-px bg-slate-800 my-2"></div>
               <div className="flex justify-between items-end">
-                <span className="text-lg font-bold text-blue-400">Total Amount</span>
-                <span className="text-4xl font-black text-white tracking-tight">₹{grandTotal.toFixed(2)}</span>
+                <span className="text-sm md:text-lg font-bold text-blue-400">Total</span>
+                <span className="text-2xl md:text-4xl font-black text-white tracking-tight">₹{grandTotal.toFixed(2)}</span>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
               <button 
-                className="py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                className="py-3 md:py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl md:rounded-2xl text-xs md:text-base transition-all active:scale-95 disabled:opacity-50"
                 disabled={cart.length === 0}
               >
-                <Scan size={20} />
-                <span>Save Bill</span>
+                SAVE
               </button>
               <button 
                 onClick={() => setIsPaymentModalOpen(true)}
-                className="py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none disabled:active:scale-100"
+                className="py-3 md:py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl md:rounded-2xl text-xs md:text-base shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
                 disabled={cart.length === 0}
               >
-                <CreditCard size={20} />
-                <span>PAY NOW</span>
+                PAY NOW
               </button>
             </div>
           </div>
         </section>
       </main>
+
+      {/* Floating Cart Button for Mobile */}
+      {cart.length > 0 && (
+        <button 
+          onClick={() => document.getElementById('cart-section')?.scrollIntoView({ behavior: 'smooth' })}
+          className="lg:hidden fixed bottom-6 right-6 z-30 bg-blue-600 text-white p-4 rounded-full shadow-2xl animate-bounce"
+        >
+          <div className="relative">
+            <ShoppingCart size={24} />
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-blue-600">
+              {cart.length}
+            </span>
+          </div>
+        </button>
+      )}
 
       {isPaymentModalOpen && (
         <PaymentModal 

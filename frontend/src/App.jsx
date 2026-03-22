@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import POSInterface from './pages/POS/POSInterface';
 import ProductManagement from './pages/Inventory/ProductManagement';
@@ -15,6 +16,7 @@ import useAuthStore from './store/authStore';
 
 function App() {
   const token = useAuthStore((state) => state.token);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!token) {
     return (
@@ -29,9 +31,18 @@ function App() {
 
   return (
     <Router>
-      <div className="flex h-screen bg-slate-100 overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 overflow-auto">
+      <div className="flex h-screen bg-slate-100 overflow-hidden relative">
+        {/* Mobile Toggle */}
+        <button 
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden fixed top-4 left-4 z-40 bg-slate-900 text-white p-3 rounded-2xl shadow-xl shadow-blue-500/20"
+        >
+          <Menu size={24} />
+        </button>
+
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        
+        <div className="flex-1 overflow-auto w-full pt-16 md:pt-0">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route element={<PrivateRoute />}>

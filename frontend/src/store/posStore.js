@@ -2,16 +2,25 @@ import { create } from 'zustand';
 
 import { io } from 'socket.io-client';
 
-const socket = io(); // Automatically connects to the current host and port
+const socketUrl = typeof window !== 'undefined' 
+  ? `${window.location.protocol}//${window.location.host}` 
+  : '';
+
+const socket = io(socketUrl, {
+  transports: ['polling', 'websocket'],
+  autoConnect: true,
+  reconnectionAttempts: 5
+});
 
 const usePOSStore = create((set, get) => ({
   cart: [],
   customer: null,
   
   initSocket: () => {
+    socket.on('connect', () => console.log('Socket connected successfully'));
+    socket.on('connect_error', (err) => console.log('Socket connection error:', err.message));
+
     socket.on('INVENTORY_UPDATE', ({ items }) => {
-      // Logic to update local product stock if needed
-      // Most products are fetched fresh, but we could update state here
       console.log('Real-time inventory update received:', items);
     });
 
