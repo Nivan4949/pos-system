@@ -33,9 +33,13 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/licenses', require('./api/licenseRoutes'));
 app.use('/api/devices', require('./api/deviceRoutes'));
 
-// Health Check
+// Health Checks
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'POS Billing System API is running on Vercel' });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'API with prefix is active' });
 });
 
 // Socket.io initialization (Conditional for Local Dev)

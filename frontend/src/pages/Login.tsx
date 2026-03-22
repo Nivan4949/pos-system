@@ -23,10 +23,12 @@ const LoginPage = () => {
       const response = await api.post('/auth/login', { username, password, deviceId });
       login(response.data.user, response.data.token);
     } catch (err: any) {
+      console.error('Login Error Object:', err);
       if (err.response?.data?.type === 'DEVICE_UNREGISTERED') {
         setShowDeviceReg(true);
       } else {
-        setError(err.response?.data?.message || 'Connection failed.');
+        const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Connection failed.';
+        setError(errorMsg);
       }
     } finally {
       setLoading(false);
