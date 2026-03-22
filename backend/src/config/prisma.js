@@ -7,7 +7,7 @@ const getDbUrl = () => {
   // If user provided a pooler URL in Vercel, use it
   if (envUrl.includes('pooler')) return envUrl;
 
-  // Otherwise, use our 100% verified fallback (Confirmed via local testing)
+  // Otherwise, use our verified fallback with the password that PASSED local verification
   const password = "POSFreshnaad123"; 
   const projectId = "genbvbumxbmslhakulkz";
   
