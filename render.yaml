@@ -2,7 +2,7 @@ services:
   - type: web
     name: pos-billing-system
     runtime: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && npm run build && npx prisma db push --schema=database/schema/schema.prisma --accept-data-loss && node database/schema/seed.js
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
