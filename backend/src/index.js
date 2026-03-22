@@ -45,6 +45,26 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'API with prefix is active' });
 });
 
+app.get('/api/db-check', async (req, res) => {
+  try {
+    const prisma = require('./config/prisma');
+    const start = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const duration = Date.now() - start;
+    res.json({ 
+      status: 'connected', 
+      duration: `${duration}ms`,
+      env_host: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'not set'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'failed', 
+      error: error.message,
+      env_host: process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'not set'
+    });
+  }
+});
+
 // Socket.io initialization (Conditional for Local Dev)
 let io;
 if (!process.env.VERCEL) {
