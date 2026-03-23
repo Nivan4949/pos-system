@@ -12,6 +12,7 @@ const customerRoutes = require('./api/customerRoutes');
 const reportRoutes = require('./api/reportRoutes');
 const expenseRoutes = require('./api/expenseRoutes');
 const authRoutes = require('./api/authRoutes');
+const categoryRoutes = require('./api/categoryRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,6 +33,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/purchases', purchaseRoutes);

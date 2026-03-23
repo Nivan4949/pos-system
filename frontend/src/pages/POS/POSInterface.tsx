@@ -22,6 +22,8 @@ const POSInterface: React.FC = () => {
   const getTotals = usePOSStore(state => state.getTotals);
   
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -39,29 +41,52 @@ const POSInterface: React.FC = () => {
   const loyaltyDiscount = usePOSStore(state => state.loyaltyDiscount);
   const appliedPoints = usePOSStore(state => state.appliedPoints);
 
-  const fetchProducts = async (query = '') => {
+  const fetchCategories = async () => {
+    try {
+      if (isOnline) {
+        const response = await api.get('/categories');
+        setCategories(response.data);
+        for (const cat of response.data) {
+          await offlineDB.put('categories', cat);
+        }
+      } else {
+        const offlineCats = await offlineDB.getAll('categories');
+        setCategories(offlineCats);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      const offlineCats = await offlineDB.getAll('categories');
+      setCategories(offlineCats);
+    }
+  };
+
+  const fetchProducts = async (query = '', catId = selectedCategoryId) => {
     setLoading(true);
     try {
       if (isOnline) {
-        const response = await api.get(`/products?search=${query}&activeOnly=true`);
+        let url = `/products?search=${query}&activeOnly=true`;
+        if (catId) url += `&categoryId=${catId}`;
+        const response = await api.get(url);
         setProducts(response.data);
-        // Cache products for offline use
-        if (query === '') {
+        // Only cache full list if no filter
+        if (query === '' && !catId) {
           for (const product of response.data) {
             await offlineDB.put('products', product);
           }
         }
       } else {
-        // Fetch from IndexedDB when offline
         const offlineProducts = await offlineDB.getAll('products');
-        const filtered = query 
-          ? offlineProducts.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.barcode?.includes(query))
-          : offlineProducts;
+        let filtered = offlineProducts;
+        if (query) {
+          filtered = filtered.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.barcode?.includes(query));
+        }
+        if (catId) {
+          filtered = filtered.filter(p => p.categoryId === catId);
+        }
         setProducts(filtered);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
-      // Fallback to offline DB on error
       const offlineProducts = await offlineDB.getAll('products');
       setProducts(offlineProducts);
     } finally {
@@ -70,12 +95,19 @@ const POSInterface: React.FC = () => {
   };
 
   useEffect(() => {
+    fetchCategories();
     fetchProducts();
   }, []);
 
+  const handleCategorySelect = (id: string | null) => {
+    setSelectedCategoryId(id);
+    setSearch('');
+    fetchProducts('', id);
+  };
+
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
-    fetchProducts(e.target.value);
+    fetchProducts(e.target.value, selectedCategoryId);
   };
 
   const toggleFullscreen = () => {
@@ -256,6 +288,33 @@ const POSInterface: React.FC = () => {
               </button>
             </div>
           )}
+
+          {/* Category Bar */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide select-none shrink-0">
+            <button
+              onClick={() => handleCategorySelect(null)}
+              className={`px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest whitespace-nowrap transition-all ${
+                selectedCategoryId === null 
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              All Items
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleCategorySelect(cat.id)}
+                className={`px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest whitespace-nowrap transition-all ${
+                  selectedCategoryId === cat.id 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                  : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-200'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
 
           {/* Product Grid */}
           <div className="flex-1 overflow-y-auto pr-1 md:pr-2 custom-scrollbar">

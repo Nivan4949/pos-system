@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'pos_offline_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export const initDB = async () => {
   return openDB(DB_NAME, DB_VERSION, {
@@ -14,6 +14,9 @@ export const initDB = async () => {
       }
       if (!db.objectStoreNames.contains('orders')) {
         db.createObjectStore('orders', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('categories')) {
+        db.createObjectStore('categories', { keyPath: 'id' });
       }
       if (!db.objectStoreNames.contains('syncQueue')) {
         db.createObjectStore('syncQueue', { keyPath: 'id', autoIncrement: true });
