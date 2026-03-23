@@ -1,17 +1,5 @@
 import { create } from 'zustand';
 
-import { io } from 'socket.io-client';
-
-const socketUrl = typeof window !== 'undefined' 
-  ? `${window.location.protocol}//${window.location.host}` 
-  : '';
-
-const socket = io(socketUrl, {
-  transports: ['polling', 'websocket'],
-  autoConnect: true,
-  reconnectionAttempts: 5
-});
-
 const usePOSStore = create((set, get) => ({
   cart: [],
   customer: null,
@@ -19,19 +7,12 @@ const usePOSStore = create((set, get) => ({
   appliedPoints: 0,
   
   initSocket: () => {
-    socket.on('connect', () => console.log('Socket connected successfully'));
-    socket.on('connect_error', (err) => console.log('Socket connection error:', err.message));
-
-    socket.on('INVENTORY_UPDATE', ({ items }) => {
-      console.log('Real-time inventory update received:', items);
-    });
-
-    socket.on('ORDER_CREATED', (order) => {
-      console.log('New order synced from another terminal:', order.invoiceNo);
-    });
+    // No-op for now to prevent loops
+    console.log('Socket initialization disabled in this build');
   },
 
   addToCart: (product, quantity = 1) => set((state) => {
+    if (!product) return state;
     const existingItem = state.cart.find((item) => item.id === product.id);
     if (existingItem) {
       return {
@@ -63,15 +44,17 @@ const usePOSStore = create((set, get) => ({
   
   getTotals: () => {
     const { cart, loyaltyDiscount } = get();
+    if (!cart) return { subtotal: 0, taxTotal: 0, grandTotal: 0, loyaltyDiscount: 0 };
+    
     const subtotal = cart.reduce(
-      (acc, item) => acc + item.sellingPrice * item.quantity,
+      (acc, item) => acc + (item.sellingPrice || 0) * (item.quantity || 0),
       0
     );
     const taxTotal = cart.reduce(
-      (acc, item) => acc + (item.sellingPrice * (item.gstRate / 100)) * item.quantity,
+      (acc, item) => acc + ((item.sellingPrice || 0) * ((item.gstRate || 0) / 100)) * (item.quantity || 0),
       0
     );
-    const grandTotal = Math.max(0, subtotal + taxTotal - loyaltyDiscount);
+    const grandTotal = Math.max(0, subtotal + taxTotal - (loyaltyDiscount || 0));
     
     return { subtotal, taxTotal, grandTotal, loyaltyDiscount };
   },
