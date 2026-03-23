@@ -21,6 +21,11 @@ router.post('/orders', auth(['ADMIN']), async (req, res) => {
       }
 
       const syncOrder = await prisma.$transaction(async (tx) => {
+        // Calculate loyalty points earned (1 point per ₹100 of grandTotal)
+        const earnRate = 100;
+        const loyaltyPointsEarned = Math.floor(orderData.grandTotal / earnRate);
+        const loyaltyPointsRedeemed = orderData.loyaltyPointsRedeemed || 0;
+
         const order = await tx.order.create({
           data: {
             invoiceNo: orderData.invoiceNo,
@@ -30,6 +35,8 @@ router.post('/orders', auth(['ADMIN']), async (req, res) => {
             taxTotal: orderData.taxTotal,
             grandTotal: orderData.grandTotal,
             paymentMode: orderData.paymentMode,
+            loyaltyPointsEarned,
+            loyaltyPointsRedeemed,
             status: 'COMPLETED',
             isSynced: true,
             createdAt: new Date(orderData.timestamp),
@@ -57,6 +64,23 @@ router.post('/orders', auth(['ADMIN']), async (req, res) => {
           await tx.product.update({
             where: { id: item.id },
             data: { stockQuantity: { decrement: item.quantity } }
+          });
+        }
+
+        // Update customer loyalty points and total spent
+        if (orderData.customerId) {
+          await tx.customer.update({
+            where: { id: orderData.customerId },
+            data: {
+              loyaltyPoints: {
+                increment: loyaltyPointsEarned,
+                decrement: loyaltyPointsRedeemed
+              },
+              totalSpent: {
+                increment: orderData.grandTotal
+              },
+              lastPurchaseDate: new Date(orderData.timestamp)
+            }
           });
         }
 
