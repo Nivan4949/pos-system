@@ -1,7 +1,15 @@
 import { create } from 'zustand';
 
 const useAuthStore = create((set) => ({
-  user: JSON.parse(localStorage.getItem('user')) || null,
+  user: (() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      console.error('Failed to parse user from localStorage', e);
+      return null;
+    }
+  })(),
   token: localStorage.getItem('token') || null,
   
   login: (userData, token) => {
