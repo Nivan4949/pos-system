@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Printer } from 'lucide-react';
+import { X, Save, Printer, RefreshCcw } from 'lucide-react';
 import axios from 'axios';
 import api from '../api/api';
 import { Product } from '../types';
@@ -39,19 +39,39 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
     }
   }, [formData.barcode]);
 
+  const [saving, setSaving] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
     try {
+      // Sanitise data: remove relations and read-only fields
+      const { 
+        id, category, inventoryLogs, orderItems, purchaseItems, 
+        createdAt, updatedAt, ...cleanData 
+      } = formData as any;
+
+      // Ensure numeric fields are numbers
+      const submitData = {
+        ...cleanData,
+        purchasePrice: Number(cleanData.purchasePrice) || 0,
+        sellingPrice: Number(cleanData.sellingPrice) || 0,
+        gstRate: Number(cleanData.gstRate) || 0,
+        stockQuantity: Number(cleanData.stockQuantity) || 0,
+      };
+
       if (product?.id) {
-        await api.put(`/products/${product.id}`, formData);
+        await api.put(`/products/${product.id}`, submitData);
       } else {
-        await api.post('/products', formData);
+        await api.post('/products', submitData);
       }
       onSave();
     } catch (error: any) {
       console.error('Error saving product:', error);
       const message = error.response?.data?.error || 'Failed to save product';
       alert(message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -202,10 +222,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+              disabled={saving}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Save size={18} />
-              <span>Save Product</span>
+              {saving ? <RefreshCcw size={18} className="animate-spin" /> : <Save size={18} />}
+              <span>{saving ? 'Saving...' : 'Save Product'}</span>
             </button>
           </div>
         </form>

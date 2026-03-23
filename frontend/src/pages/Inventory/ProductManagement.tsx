@@ -171,7 +171,7 @@ const ProductManagement = () => {
       {isModalOpen && (
         <ProductModal 
           product={selectedProduct}
-          onClose={() => setIsModalOpen(true)}
+          onClose={() => setIsModalOpen(false)}
           onSave={() => {
             setIsModalOpen(false);
             fetchProducts();

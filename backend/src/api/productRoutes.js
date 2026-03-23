@@ -34,16 +34,32 @@ router.get('/', async (req, res) => {
 // Create product
 router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
-    const data = { ...req.body };
-    // Handle barcode unique constraint: if not provided, generate uniquely
-    if (!data.barcode || data.barcode.trim() === '') {
-      data.barcode = 'PRD-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const {
+      name, barcode, categoryId, brand, purchasePrice, 
+      sellingPrice, gstRate, stockQuantity, unit, supplier, 
+      image, is_active
+    } = req.body;
+
+    let finalBarcode = barcode;
+    if (!finalBarcode || finalBarcode.trim() === '') {
+      finalBarcode = 'PRD-' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     }
-    
-    console.log('Creating product with data:', JSON.stringify(data, null, 2));
-    
+
     const product = await prisma.product.create({
-      data: data
+      data: {
+        name,
+        barcode: finalBarcode,
+        brand,
+        purchasePrice: parseFloat(purchasePrice) || 0,
+        sellingPrice: parseFloat(sellingPrice) || 0,
+        gstRate: parseFloat(gstRate) || 0,
+        stockQuantity: parseInt(stockQuantity) || 0,
+        unit: unit || 'pcs',
+        supplier,
+        image,
+        is_active: is_active ?? true,
+        categoryId: categoryId || null
+      }
     });
     res.json(product);
   } catch (error) {
@@ -56,15 +72,34 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
 router.put('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { id } = req.params;
-    const data = { ...req.body };
-    // Handle barcode unique constraint (empty string -> null)
-    if (data.barcode === '') {
-      data.barcode = null;
+    const {
+      name, barcode, categoryId, brand, purchasePrice, 
+      sellingPrice, gstRate, stockQuantity, unit, supplier, 
+      image, is_active
+    } = req.body;
+
+    const updateData = {
+      name,
+      brand,
+      purchasePrice: parseFloat(purchasePrice) || 0,
+      sellingPrice: parseFloat(sellingPrice) || 0,
+      gstRate: parseFloat(gstRate) || 0,
+      stockQuantity: parseInt(stockQuantity) || 0,
+      unit,
+      supplier,
+      image,
+      is_active: is_active ?? true,
+      categoryId: categoryId || null
+    };
+
+    // Handle barcode specifically
+    if (barcode !== undefined) {
+      updateData.barcode = (barcode === '' || barcode === null) ? null : barcode;
     }
 
     const product = await prisma.product.update({
       where: { id },
-      data: data
+      data: updateData
     });
     res.json(product);
   } catch (error) {
