@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 // Create new order
 router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
   try {
-    const { customerId, orderItems, subtotal, discount, taxTotal, grandTotal, paymentMode } = req.body;
+    const { customerId, orderItems, subtotal, discount, taxTotal, grandTotal, paymentMode, loyaltyPointsRedeemed = 0 } = req.body;
 
     // Generate Robust Invoice Number (e.g., ST01-1710500000-A1B2)
     const terminalId = req.headers['x-terminal-id'] || 'T1';
@@ -15,6 +15,17 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
     const invoiceNo = `INV-${terminalId}-${timestamp}-${random}`;
 
     const order = await prisma.$transaction(async (tx) => {
+      // Calculate points earned (1 point per ₹100 of grandTotal)
+      const earnRate = 100;
+      const loyaltyPointsEarned = Math.floor(grandTotal / earnRate);
+
+      // Verify points if redeeming
+      if (customerId && loyaltyPointsRedeemed > 0) {
+        const customer = await tx.customer.findUnique({ where: { id: customerId } });
+        if (!customer) throw new Error('Customer not found');
+        if (customer.loyaltyPoints < loyaltyPointsRedeemed) throw new Error('Insufficient loyalty points');
+      }
+
       // 1. Create the order
       const newOrder = await tx.order.create({
         data: {
@@ -25,6 +36,8 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
           taxTotal,
           grandTotal,
           paymentMode,
+          loyaltyPointsEarned,
+          loyaltyPointsRedeemed,
           status: 'COMPLETED',
           orderItems: {
             create: orderItems.map((item) => ({
@@ -71,7 +84,24 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
         });
       }
 
-      // 3. Emit real-time events for other terminals
+      // 3. Update customer loyalty points and total spent
+      if (customerId) {
+        await tx.customer.update({
+          where: { id: customerId },
+          data: {
+            loyaltyPoints: {
+              increment: loyaltyPointsEarned,
+              decrement: loyaltyPointsRedeemed
+            },
+            totalSpent: {
+              increment: grandTotal
+            },
+            lastPurchaseDate: new Date()
+          }
+        });
+      }
+
+      // 4. Emit real-time events for other terminals
       const io = req.app.get('io');
       io.emit('INVENTORY_UPDATE', { items: orderItems });
       io.emit('ORDER_CREATED', newOrder);

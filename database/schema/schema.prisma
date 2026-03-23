@@ -69,43 +69,48 @@ model Product {
   image          String?
   is_active      Boolean        @default(true)
   orderItems     OrderItem[]
+  purchaseItems  PurchaseItem[]
   inventoryLogs  InventoryLog[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 }
 
 model Customer {
-  id            String   @id @default(uuid())
-  name          String
-  phone         String?  @unique
-  email         String?
-  loyaltyPoints Int      @default(0)
-  creditBalance Float    @default(0)
-  orders        Order[]
-  is_active     Boolean  @default(true)
-  isSynced      Boolean  @default(false)
-  serverId      String?  @unique
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(uuid())
+  name             String
+  phone            String?  @unique
+  email            String?
+  loyaltyPoints    Int      @default(0)
+  totalSpent       Float    @default(0)
+  lastPurchaseDate DateTime?
+  creditBalance    Float    @default(0)
+  orders           Order[]
+  is_active        Boolean  @default(true)
+  isSynced         Boolean  @default(false)
+  serverId         String?  @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Order {
-  id           String      @id @default(uuid())
-  invoiceNo    String      @unique
-  customer     Customer?   @relation(fields: [customerId], references: [id])
-  customerId   String?
-  subtotal     Float
-  discount     Float       @default(0)
-  taxTotal     Float
-  grandTotal   Float
-  paymentMode  String      
-  status       String      @default("COMPLETED")
-  orderItems   OrderItem[]
-  payments     Payment[]
-  isSynced     Boolean     @default(false)
-  serverId     String?     @unique
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                    String      @id @default(uuid())
+  invoiceNo             String      @unique
+  customer              Customer?   @relation(fields: [customerId], references: [id])
+  customerId            String?
+  subtotal              Float
+  discount              Float       @default(0)
+  taxTotal              Float
+  grandTotal            Float
+  loyaltyPointsEarned   Int         @default(0)
+  loyaltyPointsRedeemed Int         @default(0)
+  paymentMode           String      
+  status                String      @default("COMPLETED")
+  orderItems            OrderItem[]
+  payments              Payment[]
+  isSynced              Boolean     @default(false)
+  serverId              String?     @unique
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 }
 
 model OrderItem {
@@ -149,4 +154,31 @@ model Expense {
   description String?
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
+}
+
+model Purchase {
+  id            String         @id @default(uuid())
+  invoiceNo     String         @unique
+  supplierName  String
+  subtotal      Float
+  taxTotal      Float
+  grandTotal    Float
+  paymentMode   String
+  status        String         @default("COMPLETED")
+  date          DateTime       @default(now())
+  purchaseItems PurchaseItem[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model PurchaseItem {
+  id         String   @id @default(uuid())
+  purchase   Purchase @relation(fields: [purchaseId], references: [id])
+  purchaseId String
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+  quantity   Int
+  price      Float
+  taxAmount  Float
+  total      Float
 }

@@ -15,6 +15,8 @@ const socket = io(socketUrl, {
 const usePOSStore = create((set, get) => ({
   cart: [],
   customer: null,
+  loyaltyDiscount: 0,
+  appliedPoints: 0,
   
   initSocket: () => {
     socket.on('connect', () => console.log('Socket connected successfully'));
@@ -53,12 +55,14 @@ const usePOSStore = create((set, get) => ({
     ),
   })),
 
-  clearCart: () => set({ cart: [] }),
+  clearCart: () => set({ cart: [], loyaltyDiscount: 0, appliedPoints: 0 }),
   
-  setCustomer: (customer) => set({ customer }),
+  setCustomer: (customer) => set({ customer, loyaltyDiscount: 0, appliedPoints: 0 }),
+
+  setLoyaltyDiscount: (discount, points) => set({ loyaltyDiscount: discount, appliedPoints: points }),
   
   getTotals: () => {
-    const { cart } = get();
+    const { cart, loyaltyDiscount } = get();
     const subtotal = cart.reduce(
       (acc, item) => acc + item.sellingPrice * item.quantity,
       0
@@ -67,9 +71,9 @@ const usePOSStore = create((set, get) => ({
       (acc, item) => acc + (item.sellingPrice * (item.gstRate / 100)) * item.quantity,
       0
     );
-    const grandTotal = subtotal + taxTotal;
+    const grandTotal = Math.max(0, subtotal + taxTotal - loyaltyDiscount);
     
-    return { subtotal, taxTotal, grandTotal };
+    return { subtotal, taxTotal, grandTotal, loyaltyDiscount };
   },
 }));
 
