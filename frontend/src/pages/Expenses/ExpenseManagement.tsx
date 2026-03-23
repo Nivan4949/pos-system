@@ -36,7 +36,8 @@ const ExpenseManagement = () => {
       setLoading(true);
       await api.post('/expenses', {
         ...formData,
-        amount: parseFloat(formData.amount)
+        amount: parseFloat(formData.amount),
+        date: new Date(formData.date).toISOString()
       });
       setIsModalOpen(false);
       setFormData({
