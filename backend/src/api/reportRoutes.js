@@ -42,17 +42,29 @@ router.get('/summary', async (req, res) => {
       where: { authorized: true }
     });
     const recentOrders = await prisma.order.findMany({
-      take: 5,
+      take: 10,
       orderBy: { createdAt: 'desc' },
-      include: { orderItems: true }
+      include: { 
+        orderItems: { include: { product: true } },
+        payments: true 
+      }
     });
-    
-    // For distribution, let's get Sales by Category
-    const salesByCategory = await prisma.orderItem.groupBy({
-      by: ['productId'],
-      _sum: { total: true },
-      take: 10
+
+    // Top Selling Categories for Distribution
+    const categorySales = await prisma.orderItem.findMany({
+      include: { product: { include: { category: true } } }
     });
+
+    const distributionMap = {};
+    categorySales.forEach(item => {
+      const catName = item.product?.category?.name || 'Uncategorized';
+      distributionMap[catName] = (distributionMap[catName] || 0) + item.total;
+    });
+
+    const distribution = Object.entries(distributionMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
 
     res.json({
       totalRevenue: totalRevenue._sum.grandTotal || 0,
@@ -60,7 +72,8 @@ router.get('/summary', async (req, res) => {
       lowStockAlerts,
       activeTerminals,
       recentOrders,
-      distribution: [] // Optional: feature for later
+      distribution,
+      lastSync: recentOrders[0]?.createdAt || new Date()
     });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });

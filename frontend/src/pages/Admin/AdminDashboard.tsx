@@ -1,32 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, AlertTriangle, ArrowUpRight, RefreshCcw, Smartphone } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/api';
 
 const AdminDashboard = () => {
+    const navigate = useNavigate();
     const [stats, setStats] = useState<{
         totalRevenue: number;
         totalOrders: number;
         recentOrders: any[];
         lowStockAlerts: number;
         activeTerminals: number;
+        distribution: any[];
+        lastSync: string;
     }>({
         totalRevenue: 0,
         totalOrders: 0,
         recentOrders: [],
         lowStockAlerts: 0,
-        activeTerminals: 0
+        activeTerminals: 0,
+        distribution: [],
+        lastSync: new Date().toISOString()
     });
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     const fetchStats = async () => {
         try {
+            setRefreshing(true);
             const response = await api.get('/reports/summary');
             setStats(prev => ({ ...prev, ...response.data }));
         } catch (error) {
             console.error('Dashboard Error:', error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -39,34 +48,31 @@ const AdminDashboard = () => {
             autoConnect: true
         });
 
-        socket.on('connect', () => console.log('Admin Socket Connected'));
-        socket.on('connect_error', (err) => console.log('Admin Socket Error:', err.message));
-        
-        const handleOrderCreated = (order: any) => {
+        socket.on('ORDER_CREATED', (order: any) => {
             setStats(prev => ({
                 ...prev,
                 totalRevenue: prev.totalRevenue + order.grandTotal,
                 totalOrders: prev.totalOrders + 1,
-                recentOrders: [order, ...prev.recentOrders.slice(0, 9)]
+                recentOrders: [order, ...prev.recentOrders.slice(0, 9)],
+                lastSync: new Date().toISOString()
             }));
-        };
+        });
 
-        const handleOrderSynced = ({ invoiceNo }: { invoiceNo: string }) => {
-            console.log('Order synced to cloud:', invoiceNo);
-            fetchStats();
-        };
-
-        socket.on('ORDER_CREATED', handleOrderCreated);
-        socket.on('ORDER_SYNCED', handleOrderSynced);
+        socket.on('ORDER_SYNCED', () => fetchStats());
 
         return () => {
-            socket.off('ORDER_CREATED', handleOrderCreated);
-            socket.off('ORDER_SYNCED', handleOrderSynced);
             socket.disconnect();
         };
     }, []);
 
-    if (loading) return <div className="p-8 text-center animate-pulse">Loading Global Dashboard...</div>;
+    if (loading) return (
+        <div className="p-8 bg-slate-900 min-h-screen flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <RefreshCcw className="text-blue-500 animate-spin" size={48} />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Initializing Command Center...</p>
+            </div>
+        </div>
+    );
 
     return (
         <div className="p-8 bg-slate-900 min-h-screen font-sans text-white">
@@ -74,83 +80,179 @@ const AdminDashboard = () => {
                 <div className="flex justify-between items-center mb-10">
                     <div>
                         <h1 className="text-4xl font-black tracking-tight mb-2">Global Command Center</h1>
-                        <p className="text-slate-400 font-medium">Real-time enterprise monitoring across all branches.</p>
+                        <p className="text-slate-400 font-medium flex items-center gap-2">
+                            Real-time enterprise monitoring. 
+                            <span className="text-[10px] bg-white/5 px-2 py-1 rounded-md text-slate-500 font-mono">
+                                LAST REFRESHED: {new Date(stats.lastSync).toLocaleTimeString()}
+                            </span>
+                        </p>
                     </div>
                     <div className="flex gap-4">
+                        <button 
+                            onClick={fetchStats}
+                            className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all active:scale-95 group"
+                            title="Refresh Dashboard"
+                        >
+                            <RefreshCcw size={20} className={`text-slate-400 group-hover:text-white ${refreshing ? 'animate-spin' : ''}`} />
+                        </button>
                         <div className="px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full flex items-center gap-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-green-500 text-xs font-bold uppercase tracking-widest">Cloud Sync Live</span>
+                            <span className="text-green-500 text-[10px] font-black uppercase tracking-widest">Cloud Sync Live</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+                    <button 
+                        onClick={() => navigate('/reports')}
+                        className="text-left bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group hover:bg-white/10 transition-all hover:-translate-y-1 active:scale-[0.98]"
+                    >
                         <div className="absolute top-0 right-0 p-8 text-blue-500/10 group-hover:text-blue-500/20 transition-colors">
                             <TrendingUp size={80} />
                         </div>
-                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4">Live Revenue</p>
+                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                            Live Revenue <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </p>
                         <h2 className="text-4xl font-black">₹{stats.totalRevenue.toLocaleString()}</h2>
-                    </div>
+                    </button>
 
-                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+                    <button 
+                        onClick={() => navigate('/reports')}
+                        className="text-left bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group hover:bg-white/10 transition-all hover:-translate-y-1 active:scale-[0.98]"
+                    >
                         <div className="absolute top-0 right-0 p-8 text-green-500/10 group-hover:text-green-500/20 transition-colors">
                             <ShoppingBag size={80} />
                         </div>
-                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4">Total Orders</p>
+                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                            Total Orders <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </p>
                         <h2 className="text-4xl font-black">{stats.totalOrders}</h2>
-                    </div>
+                    </button>
 
-                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+                    <button 
+                        onClick={() => navigate('/inventory')}
+                        className="text-left bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group hover:bg-white/10 transition-all hover:-translate-y-1 active:scale-[0.98]"
+                    >
                         <div className="absolute top-0 right-0 p-8 text-orange-500/10 group-hover:text-orange-500/20 transition-colors">
                             <AlertTriangle size={80} />
                         </div>
-                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4">Stock Alerts</p>
+                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                            Stock Alerts <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </p>
                         <h2 className="text-4xl font-black text-orange-400">{stats.lowStockAlerts}</h2>
-                    </div>
+                    </button>
 
-                    <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
+                    <button 
+                        onClick={() => navigate('/admin/devices')}
+                        className="text-left bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group hover:bg-white/10 transition-all hover:-translate-y-1 active:scale-[0.98]"
+                    >
                         <div className="absolute top-0 right-0 p-8 text-purple-500/10 group-hover:text-purple-500/20 transition-colors">
-                            <Users size={80} />
+                            <Smartphone size={80} />
                         </div>
-                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4">Active Terminals</p>
+                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                            Terminals <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </p>
                         <h2 className="text-4xl font-black">{stats.activeTerminals}</h2>
-                    </div>
+                    </button>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8">
-                    <div className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
-                        <div className="p-8 border-b border-white/5 flex justify-between items-center">
-                            <h3 className="text-xl font-bold">Global Transaction Stream</h3>
-                            <button className="text-blue-400 font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:text-blue-300">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2 bg-white/5 backdrop-blur-xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+                        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                            <h3 className="text-xl font-bold flex items-center gap-3">
+                                <Clock className="text-blue-500" />
+                                Global Transaction Stream
+                            </h3>
+                            <button 
+                                onClick={() => navigate('/reports')}
+                                className="text-blue-400 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:text-blue-300 transition-colors"
+                            >
                                 View Full Report <ArrowUpRight size={16} />
                             </button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-white/5">
+                                <thead className="bg-white/[0.03]">
                                     <tr className="text-[10px] uppercase font-black tracking-widest text-slate-500">
                                         <th className="px-8 py-4">Terminal</th>
                                         <th className="px-8 py-4">Invoice</th>
-                                        <th className="px-8 py-4">Items</th>
+                                        <th className="px-8 py-4">Status</th>
                                         <th className="px-8 py-4 text-right">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {stats.recentOrders.map((order, idx) => (
-                                        <tr key={idx} className="hover:bg-white/5 transition-colors group">
-                                            <td className="px-8 py-6 font-bold text-slate-400">TRM-{order.invoiceNo.split('-')[1] || '01'}</td>
-                                            <td className="px-8 py-6 font-black text-white">{order.invoiceNo}</td>
-                                            <td className="px-8 py-6 text-slate-400">{order.orderItems?.length || 0} Products</td>
-                                            <td className="px-8 py-6 text-right font-black text-green-400 text-lg">₹{order.grandTotal.toFixed(2)}</td>
+                                        <tr key={idx} className="hover:bg-white/5 transition-colors group border-white/5">
+                                            <td className="px-8 py-6 flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black text-slate-400">T{idx+1}</div>
+                                                <div>
+                                                    <p className="font-bold text-white text-sm">Station Alpha</p>
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">{order.paymentMode}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <p className="font-black text-white text-sm">{order.invoiceNo}</p>
+                                                <p className="text-[10px] font-medium text-slate-500">{new Date(order.createdAt).toLocaleTimeString()}</p>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <span className="bg-green-500/10 text-green-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-500/20">Synced</span>
+                                            </td>
+                                            <td className="px-8 py-6 text-right font-black text-white text-lg group-hover:text-green-400 transition-colors">
+                                                ₹{order.grandTotal.toFixed(2)}
+                                            </td>
                                         </tr>
                                     ))}
                                     {stats.recentOrders.length === 0 && (
-                                        <tr><td colSpan={4} className="px-8 py-20 text-center text-slate-500">No recent transactions.</td></tr>
+                                        <tr><td colSpan={4} className="px-8 py-20 text-center text-slate-500 font-bold uppercase tracking-widest">No recent transactions detected.</td></tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+
+                    <div className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] border border-white/10 p-8 shadow-2xl flex flex-col">
+                        <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
+                            <BarChart3 className="text-purple-500" />
+                            Category Performance
+                        </h3>
+                        <div className="space-y-6 flex-1">
+                            {stats.distribution.map((cat, idx) => {
+                                const maxVal = stats.distribution[0]?.value || 1;
+                                const percentage = (cat.value / maxVal) * 100;
+                                return (
+                                    <div key={idx} className="group">
+                                        <div className="flex justify-between items-end mb-2">
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{cat.name}</p>
+                                                <p className="font-bold text-white uppercase text-xs">₹{cat.value.toLocaleString()}</p>
+                                            </div>
+                                            <span className="text-[10px] font-black text-slate-400">{Math.round((cat.value / stats.totalRevenue) * 100)}%</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full rounded-full transition-all duration-1000 ${
+                                                    idx === 0 ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 
+                                                    idx === 1 ? 'bg-purple-500' : 
+                                                    idx === 2 ? 'bg-green-500' : 'bg-slate-500'
+                                                }`} 
+                                                style={{ width: `${percentage}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {stats.distribution.length === 0 && (
+                                <div className="h-full flex items-center justify-center text-slate-500 italic text-sm">
+                                    Awaiting sales data...
+                                </div>
+                            )}
+                        </div>
+                        <button 
+                            onClick={() => navigate('/inventory')}
+                            className="mt-8 w-full py-4 rounded-2xl bg-white/5 hover:bg-indigo-500 text-slate-400 hover:text-white font-black text-xs uppercase tracking-widest transition-all active:scale-95 border border-white/5"
+                        >
+                            Analyze Inventory Matrix
+                        </button>
                     </div>
                 </div>
             </div>
