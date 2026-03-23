@@ -5,6 +5,13 @@ import { Wallet, Plus, Calendar, Tag, CreditCard } from 'lucide-react';
 const ExpenseManagement = () => {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    type: 'GENERAL',
+    amount: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0]
+  });
 
   const fetchExpenses = async () => {
     setLoading(true);
@@ -22,6 +29,31 @@ const ExpenseManagement = () => {
     fetchExpenses();
   }, []);
 
+  const handleSaveExpense = async () => {
+    if (!formData.amount || !formData.type) return alert('Please fill in amount and category');
+    
+    try {
+      setLoading(true);
+      await api.post('/expenses', {
+        ...formData,
+        amount: parseFloat(formData.amount)
+      });
+      setIsModalOpen(false);
+      setFormData({
+        type: 'GENERAL',
+        amount: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+      fetchExpenses();
+      alert('Expense recorded successfully!');
+    } catch (error: any) {
+      alert('Error saving expense: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="p-8 bg-slate-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
@@ -30,7 +62,10 @@ const ExpenseManagement = () => {
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Expense Tracker</h1>
             <p className="text-slate-500 font-medium">Monitor your shop's recurring and one-time expenses.</p>
           </div>
-          <button className="bg-red-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-red-700 transition-all shadow-xl shadow-red-500/10 active:scale-95">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-red-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-red-700 transition-all shadow-xl shadow-red-500/10 active:scale-95"
+          >
             <Plus size={20} />
             <span>Add New Expense</span>
           </button>
@@ -47,7 +82,7 @@ const ExpenseManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {loading ? (
+              {loading && expenses.length === 0 ? (
                 <tr><td colSpan={4} className="text-center py-20 animate-pulse text-slate-400">Loading expenses...</td></tr>
               ) : expenses.length > 0 ? (
                 expenses.map((expense) => (
@@ -77,6 +112,78 @@ const ExpenseManagement = () => {
           </table>
         </div>
       </div>
+
+      {/* Add Expense Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">New Expense</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">CANCEL</button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block font-mono">Category</label>
+                <select 
+                  className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold text-slate-800 appearance-none"
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value})}
+                >
+                  <option value="GENERAL">General</option>
+                  <option value="SALARY">Salary</option>
+                  <option value="RENT">Rent</option>
+                  <option value="UTILITIES">Utilities</option>
+                  <option value="INVENTORY">Inventory</option>
+                  <option value="MARKETING">Marketing</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block font-mono">Description</label>
+                <input 
+                  type="text" 
+                  placeholder="What was this for?" 
+                  className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold text-slate-800"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block font-mono">Amount (₹)</label>
+                  <input 
+                    type="number" 
+                    placeholder="0.00" 
+                    className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold text-slate-800"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block font-mono">Date</label>
+                  <input 
+                    type="date" 
+                    className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold text-slate-800"
+                    value={formData.date}
+                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <button 
+                onClick={handleSaveExpense}
+                disabled={loading}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-2xl font-black shadow-xl transition-all active:scale-95 disabled:opacity-50 mt-4 h-[64px]"
+              >
+                {loading ? 'RECORDING...' : 'RECORD EXPENSE'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
