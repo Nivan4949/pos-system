@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/api';
-import { Wallet, Plus, Calendar, Tag, CreditCard } from 'lucide-react';
+import { Wallet, Plus, Calendar, Tag, CreditCard, Edit, Trash2 } from 'lucide-react';
 
 const ExpenseManagement = () => {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     type: 'GENERAL',
     amount: '',
@@ -34,12 +35,20 @@ const ExpenseManagement = () => {
     
     try {
       setLoading(true);
-      await api.post('/expenses', {
+      const payload = {
         ...formData,
         amount: parseFloat(formData.amount),
         date: new Date(formData.date).toISOString()
-      });
+      };
+
+      if (editingId) {
+        await api.put(`/expenses/${editingId}`, payload);
+      } else {
+        await api.post('/expenses', payload);
+      }
+
       setIsModalOpen(false);
+      setEditingId(null);
       setFormData({
         type: 'GENERAL',
         amount: '',
@@ -47,9 +56,35 @@ const ExpenseManagement = () => {
         date: new Date().toISOString().split('T')[0]
       });
       fetchExpenses();
-      alert('Expense recorded successfully!');
+      alert(`Expense ${editingId ? 'updated' : 'recorded'} successfully!`);
     } catch (error: any) {
       alert('Error saving expense: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditClick = (expense: any) => {
+    setEditingId(expense.id);
+    setFormData({
+      type: expense.type,
+      amount: expense.amount.toString(),
+      description: expense.description || '',
+      date: new Date(expense.date).toISOString().split('T')[0]
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this expense?')) return;
+    
+    try {
+      setLoading(true);
+      await api.delete(`/expenses/${id}`);
+      fetchExpenses();
+      alert('Expense deleted successfully!');
+    } catch (error: any) {
+      alert('Error deleting expense: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -64,7 +99,16 @@ const ExpenseManagement = () => {
             <p className="text-slate-500 font-medium">Monitor your shop's recurring and one-time expenses.</p>
           </div>
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setEditingId(null);
+              setFormData({
+                type: 'GENERAL',
+                amount: '',
+                description: '',
+                date: new Date().toISOString().split('T')[0]
+              });
+              setIsModalOpen(true);
+            }}
             className="bg-red-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-red-700 transition-all shadow-xl shadow-red-500/10 active:scale-95"
           >
             <Plus size={20} />
@@ -80,14 +124,15 @@ const ExpenseManagement = () => {
                 <th className="px-8 py-4">Category</th>
                 <th className="px-8 py-4">Description</th>
                 <th className="px-8 py-4 text-right">Amount</th>
+                <th className="px-8 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading && expenses.length === 0 ? (
-                <tr><td colSpan={4} className="text-center py-20 animate-pulse text-slate-400">Loading expenses...</td></tr>
+                <tr><td colSpan={5} className="text-center py-20 animate-pulse text-slate-400">Loading expenses...</td></tr>
               ) : expenses.length > 0 ? (
                 expenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={expense.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-4 flex items-center gap-3 text-slate-600">
                       <Calendar size={16} className="text-slate-300" />
                       {new Date(expense.date).toLocaleDateString()}
@@ -99,11 +144,27 @@ const ExpenseManagement = () => {
                     </td>
                     <td className="px-8 py-4 text-slate-800 font-medium">{expense.description}</td>
                     <td className="px-8 py-4 text-right font-black text-red-500">₹{expense.amount.toFixed(2)}</td>
+                    <td className="px-8 py-4 text-right">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleEditClick(expense)}
+                          className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          className="p-2 text-slate-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="py-20 text-center">
+                  <td colSpan={5} className="py-20 text-center">
                     <Wallet size={48} className="mx-auto text-slate-100 mb-4" />
                     <p className="text-slate-400 font-bold">No expenses recorded yet</p>
                   </td>
@@ -114,13 +175,23 @@ const ExpenseManagement = () => {
         </div>
       </div>
 
-      {/* Add Expense Modal */}
+      {/* Add/Edit Expense Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden p-8 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-black text-slate-800 tracking-tight">New Expense</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">CANCEL</button>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                {editingId ? 'Edit Expense' : 'New Expense'}
+              </h2>
+              <button 
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setEditingId(null);
+                }} 
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                CANCEL
+              </button>
             </div>
 
             <div className="space-y-6">
@@ -179,7 +250,7 @@ const ExpenseManagement = () => {
                 disabled={loading}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-2xl font-black shadow-xl transition-all active:scale-95 disabled:opacity-50 mt-4 h-[64px]"
               >
-                {loading ? 'RECORDING...' : 'RECORD EXPENSE'}
+                {loading ? 'SAVING...' : (editingId ? 'UPDATE EXPENSE' : 'RECORD EXPENSE')}
               </button>
             </div>
           </div>
