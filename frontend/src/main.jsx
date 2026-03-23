@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx'
 import './index.css'
 
@@ -9,14 +10,19 @@ const MainApp = () => {
   const initSocket = usePOSStore(state => state.initSocket);
   
   React.useEffect(() => {
-    initSocket();
-  }, []);
+    // Only init socket if not on Vercel (socket.io doesn't work well on serverless)
+    if (!window.location.hostname.includes('vercel.app')) {
+      initSocket();
+    }
+  }, [initSocket]);
 
-  return (
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+  return <App />;
 };
 
-ReactDOM.createRoot(document.getElementById('root')).render(<MainApp />);
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <MainApp />
+    </BrowserRouter>
+  </React.StrictMode>
+);

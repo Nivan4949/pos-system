@@ -19,14 +19,10 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <Router>
-      {!token ? (
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      ) : (
-        <div className="flex h-screen bg-slate-100 overflow-hidden relative">
+    <div className="flex h-screen bg-slate-100 overflow-hidden relative">
+      {/* Sidebar - Only show if authenticated and NOT on login page */}
+      {token && (
+        <>
           {/* Mobile Toggle */}
           <button 
             onClick={() => setSidebarOpen(true)}
@@ -34,33 +30,33 @@ function App() {
           >
             <Menu size={24} />
           </button>
-
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          
-          <div className="flex-1 overflow-auto w-full pt-16 md:pt-0">
-            <Routes>
-              {/* Redirect authenticated users away from login */}
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              
-              <Route element={<PrivateRoute />}>
-                <Route path="/" element={<POSInterface />} />
-                <Route path="/inventory" element={<ProductManagement />} />
-                <Route path="/customers" element={<CustomerManagement />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/expenses" element={<ExpenseManagement />} />
-                <Route path="/settings" element={<div className="p-8"><h1 className="text-2xl font-bold">System Settings Coming Soon</h1></div>} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/licenses" element={<LicenseManagement />} />
-                <Route path="/admin/devices" element={<DeviceManagement />} />
-              </Route>
-              
-              {/* Catch-all for authenticated users */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-        </div>
+        </>
       )}
-    </Router>
+      
+      <div className={`flex-1 overflow-auto w-full ${token ? 'pt-16 md:pt-0' : ''}`}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={!token ? <LoginPage /> : <Navigate to="/" replace />} />
+          
+          {/* Protected Routes */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/" element={<POSInterface />} />
+            <Route path="/inventory" element={<ProductManagement />} />
+            <Route path="/customers" element={<CustomerManagement />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/expenses" element={<ExpenseManagement />} />
+            <Route path="/settings" element={<div className="p-8"><h1 className="text-2xl font-bold">System Settings Coming Soon</h1></div>} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/licenses" element={<LicenseManagement />} />
+            <Route path="/admin/devices" element={<DeviceManagement />} />
+          </Route>
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
+        </Routes>
+      </div>
+    </div>
   );
 }
 
