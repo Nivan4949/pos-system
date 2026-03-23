@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "npx prisma db push --schema=../database/schema/schema.prisma && node src/index.js",
+    "postinstall": "npx prisma generate --schema=../database/schema/schema.prisma",
     "prisma:generate": "npx prisma generate --schema=../database/schema/schema.prisma",
     "prisma:push": "npx prisma db push --schema=../database/schema/schema.prisma",
     "dev": "nodemon src/index.js"
