@@ -14,7 +14,13 @@ import CustomerSelectionModal from '../../components/CustomerSelectionModal';
 import RedeemPointsModal from '../../components/RedeemPointsModal';
 
 const POSInterface: React.FC = () => {
-  const { cart, addToCart, removeFromCart, updateQuantity, clearCart, getTotals } = usePOSStore();
+  const cart = usePOSStore(state => state.cart);
+  const addToCart = usePOSStore(state => state.addToCart);
+  const removeFromCart = usePOSStore(state => state.removeFromCart);
+  const updateQuantity = usePOSStore(state => state.updateQuantity);
+  const clearCart = usePOSStore(state => state.clearCart);
+  const getTotals = usePOSStore(state => state.getTotals);
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,12 +33,11 @@ const POSInterface: React.FC = () => {
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
 
   const isOnline = useNetworkStatus();
-  const { customer, setCustomer, loyaltyDiscount, appliedPoints } = usePOSStore(state => ({
-    customer: state.customer,
-    setCustomer: state.setCustomer,
-    loyaltyDiscount: state.loyaltyDiscount,
-    appliedPoints: state.appliedPoints
-  }));
+  
+  const customer = usePOSStore(state => state.customer);
+  const setCustomer = usePOSStore(state => state.setCustomer);
+  const loyaltyDiscount = usePOSStore(state => state.loyaltyDiscount);
+  const appliedPoints = usePOSStore(state => state.appliedPoints);
 
   const fetchProducts = async (query = '') => {
     setLoading(true);
