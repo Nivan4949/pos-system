@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { ShoppingBag, Package, BarChart3, Settings, LogOut, LayoutDashboard, Key, Smartphone, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, BarChart3, Key, Smartphone, Settings, LogOut, Menu, X, Plus } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 
 const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
@@ -10,15 +10,18 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
   const menuItems = [
     { icon: <ShoppingBag size={22} />, label: 'POS Billing', path: '/', roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
     { icon: <LayoutDashboard size={22} />, label: 'Cloud Dashboard', path: '/admin/dashboard', roles: ['ADMIN'] },
-    { icon: <Package size={22} />, label: 'Inventory', path: '/inventory', roles: ['ADMIN', 'MANAGER'] },
-    { icon: <BarChart3 size={22} />, label: 'Reports', path: '/reports', roles: ['ADMIN'] },
-    { icon: <Key size={22} />, label: 'Licenses', path: '/admin/licenses', roles: ['ADMIN'] },
-    { icon: <Smartphone size={22} />, label: 'Devices', path: '/admin/devices', roles: ['ADMIN'] },
-    { icon: <LayoutDashboard size={22} />, label: 'Expenses', path: '/expenses', roles: ['ADMIN', 'MANAGER'] },
-    { icon: <Settings size={22} />, label: 'Settings', path: '/settings', roles: ['ADMIN'] },
+    { icon: <Package size={22} />, label: 'Inventory Management', path: '/inventory', roles: ['ADMIN', 'MANAGER'] },
+    { icon: <Package size={22} />, label: 'Stock Procurement', path: '/stock-procurement', roles: ['ADMIN', 'MANAGER'] },
+    { icon: <BarChart3 size={22} />, label: 'Financial Reports', path: '/reports', roles: ['ADMIN', 'MANAGER'] },
+    { icon: <LayoutDashboard size={22} />, label: 'Daily Expenses', path: '/expenses', roles: ['ADMIN', 'MANAGER'] },
+    { icon: <Key size={22} />, label: 'License Desk', path: '/admin/licenses', roles: ['ADMIN'] },
+    { icon: <Smartphone size={22} />, label: 'Device Registry', path: '/admin/devices', roles: ['ADMIN'] },
+    { icon: <Settings size={22} />, label: 'Settings', path: '/settings', roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
   ];
 
-  const filteredMenu = menuItems.filter(item => item.roles.includes(user?.role));
+  const filteredMenu = menuItems.filter(item => 
+    item.roles.map(r => r.toUpperCase()).includes(user?.role?.toUpperCase())
+  );
 
   return (
     <>

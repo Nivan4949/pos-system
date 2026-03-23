@@ -8,12 +8,14 @@ const AdminDashboard = () => {
         totalRevenue: number;
         totalOrders: number;
         recentOrders: any[];
-        lowStockAlerts: any[];
+        lowStockAlerts: number;
+        activeTerminals: number;
     }>({
         totalRevenue: 0,
         totalOrders: 0,
         recentOrders: [],
-        lowStockAlerts: []
+        lowStockAlerts: 0,
+        activeTerminals: 0
     });
     const [loading, setLoading] = useState(true);
 
@@ -104,7 +106,7 @@ const AdminDashboard = () => {
                             <AlertTriangle size={80} />
                         </div>
                         <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4">Stock Alerts</p>
-                        <h2 className="text-4xl font-black text-orange-400">0</h2>
+                        <h2 className="text-4xl font-black text-orange-400">{stats.lowStockAlerts}</h2>
                     </div>
 
                     <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden group">
@@ -112,12 +114,12 @@ const AdminDashboard = () => {
                             <Users size={80} />
                         </div>
                         <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-4">Active Terminals</p>
-                        <h2 className="text-4xl font-black">1</h2>
+                        <h2 className="text-4xl font-black">{stats.activeTerminals}</h2>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 bg-white/5 backdrop-blur-xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+                <div className="grid grid-cols-1 gap-8">
+                    <div className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
                         <div className="p-8 border-b border-white/5 flex justify-between items-center">
                             <h3 className="text-xl font-bold">Global Transaction Stream</h3>
                             <button className="text-blue-400 font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:text-blue-300">
@@ -137,38 +139,17 @@ const AdminDashboard = () => {
                                 <tbody className="divide-y divide-white/5">
                                     {stats.recentOrders.map((order, idx) => (
                                         <tr key={idx} className="hover:bg-white/5 transition-colors group">
-                                            <td className="px-8 py-6 font-bold text-slate-400">ST-01</td>
+                                            <td className="px-8 py-6 font-bold text-slate-400">TRM-{order.invoiceNo.split('-')[1] || '01'}</td>
                                             <td className="px-8 py-6 font-black text-white">{order.invoiceNo}</td>
                                             <td className="px-8 py-6 text-slate-400">{order.orderItems?.length || 0} Products</td>
                                             <td className="px-8 py-6 text-right font-black text-green-400 text-lg">₹{order.grandTotal.toFixed(2)}</td>
                                         </tr>
                                     ))}
+                                    {stats.recentOrders.length === 0 && (
+                                        <tr><td colSpan={4} className="px-8 py-20 text-center text-slate-500">No recent transactions.</td></tr>
+                                    )}
                                 </tbody>
                             </table>
-                        </div>
-                    </div>
-
-                    <div className="bg-white/5 backdrop-blur-xl rounded-[2.5rem] border border-white/10 p-8 shadow-2xl">
-                        <h3 className="text-xl font-bold mb-6">Regional Distribution</h3>
-                        <div className="space-y-6">
-                            <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
-                                <div className="flex justify-between items-center mb-4">
-                                    <span className="font-bold">Main Branch</span>
-                                    <span className="text-blue-400 font-black text-sm">82%</span>
-                                </div>
-                                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                                    <div className="h-full bg-blue-500 w-[82%] shadow-[0_0_20px_rgba(59,130,246,0.5)]"></div>
-                                </div>
-                            </div>
-                            <div className="p-6 bg-white/5 rounded-3xl border border-white/5">
-                                <div className="flex justify-between items-center mb-4">
-                                    <span className="font-bold">Warehouse-01</span>
-                                    <span className="text-purple-400 font-black text-sm">18%</span>
-                                </div>
-                                <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
-                                    <div className="h-full bg-purple-500 w-[18%] shadow-[0_0_20px_rgba(168,85,247,0.5)]"></div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

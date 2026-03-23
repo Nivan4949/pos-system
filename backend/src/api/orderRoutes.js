@@ -15,18 +15,27 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
     const invoiceNo = `INV-${terminalId}-${timestamp}-${random}`;
 
     const order = await prisma.$transaction(async (tx) => {
-      // Calculate points earned (1 point per ₹100 of grandTotal)
+      // 1. Calculate points earned (1 point per ₹100 of grandTotal)
       const earnRate = 100;
       const loyaltyPointsEarned = Math.floor(grandTotal / earnRate);
 
-      // Verify points if redeeming
+      // 2. Verify points if redeeming
       if (customerId && loyaltyPointsRedeemed > 0) {
         const customer = await tx.customer.findUnique({ where: { id: customerId } });
         if (!customer) throw new Error('Customer not found');
         if (customer.loyaltyPoints < loyaltyPointsRedeemed) throw new Error('Insufficient loyalty points');
       }
 
-      // 1. Create the order
+      // 3. Check Stock Levels (Guard against negative stock)
+      for (const item of orderItems) {
+        const product = await tx.product.findUnique({ where: { id: item.id } });
+        if (!product) throw new Error(`Product ${item.name} not found`);
+        if (product.stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for ${product.name}. Available: ${product.stockQuantity}`);
+        }
+      }
+
+      // 4. Create the order
       const newOrder = await tx.order.create({
         data: {
           invoiceNo,
@@ -45,8 +54,8 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
               quantity: item.quantity,
               price: item.sellingPrice,
               discount: item.discount || 0,
-              taxAmount: (item.sellingPrice * (item.gstRate / 100)) * item.quantity,
-              total: (item.sellingPrice * item.quantity) + ((item.sellingPrice * (item.gstRate / 100)) * item.quantity)
+              taxAmount: (item.sellingPrice * ((item.gstRate || 18) / 100)) * item.quantity,
+              total: (item.sellingPrice * item.quantity) + ((item.sellingPrice * ((item.gstRate || 18) / 100)) * item.quantity)
             }))
           },
           payments: {
@@ -63,7 +72,7 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
         }
       });
 
-      // 2. Deduct inventory and log it
+      // 5. Deduct inventory and log it
       for (const item of orderItems) {
         await tx.product.update({
           where: { id: item.id },
@@ -84,7 +93,7 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
         });
       }
 
-      // 3. Update customer loyalty points and total spent
+      // 6. Update customer loyalty points and total spent
       if (customerId) {
         await tx.customer.update({
           where: { id: customerId },
@@ -101,10 +110,12 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
         });
       }
 
-      // 4. Emit real-time events for other terminals
+      // 7. Emit real-time events for other terminals
       const io = req.app.get('io');
-      io.emit('INVENTORY_UPDATE', { items: orderItems });
-      io.emit('ORDER_CREATED', newOrder);
+      if (io) {
+        io.emit('INVENTORY_UPDATE', { items: orderItems });
+        io.emit('ORDER_CREATED', newOrder);
+      }
 
       return newOrder;
     });

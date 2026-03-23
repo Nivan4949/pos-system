@@ -72,4 +72,61 @@ router.post('/register-device', async (req, res) => {
     }
 });
 
+// Change Password (Self-service)
+router.post('/change-password', async (req, res) => {
+    const { userId, currentPassword, newPassword } = req.body;
+    try {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch && currentPassword !== user.password) {
+            return res.status(401).json({ message: 'Incorrect current password' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword }
+        });
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Admin Reset Password (Admin only)
+router.post('/admin/reset-password', async (req, res) => {
+    const { adminId, targetUserId, newPassword } = req.body;
+    try {
+        const admin = await prisma.user.findUnique({ where: { id: adminId } });
+        if (!admin || admin.role !== 'ADMIN') {
+            return res.status(403).json({ message: 'Unauthorized. Admin access required.' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: { id: targetUserId },
+            data: { password: hashedPassword }
+        });
+
+        res.json({ message: 'User password reset successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get all users (Admin only, for user selection)
+router.get('/users', async (req, res) => {
+    try {
+        const users = await prisma.user.findMany({
+            select: { id: true, name: true, email: true, role: true }
+        });
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;

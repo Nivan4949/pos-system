@@ -86,14 +86,30 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ total, onPaymentComplete, o
         </div>
 
         {/* Input Method */}
-        <div className="w-full md:w-1/2 p-8 bg-slate-800 flex flex-col justify-center gap-4">
-           {paymentMethod === 'UPI' ? (
+        <div className="w-full md:w-1/2 p-8 bg-slate-800 flex flex-col justify-center gap-4 overflow-y-auto">
+           {paymentMethod === 'UPI' || paymentMethod === 'CARD' ? (
              <div className="flex flex-col items-center justify-center h-full text-white text-center">
                 <div className="bg-white p-4 rounded-3xl mb-6 shadow-xl">
                    <QrCode size={200} className="text-slate-900" />
                 </div>
                 <p className="text-xl font-bold mb-2">Scan to Pay ₹{total.toFixed(2)}</p>
-                <p className="text-slate-400 text-sm">Waiting for payment confirmation...</p>
+                <p className="text-slate-400 text-sm mb-4">Waiting for payment confirmation...</p>
+                
+                <div className="flex flex-col gap-4 w-full px-10">
+                  <button 
+                    onClick={() => onPaymentComplete(paymentMethod, total.toString())}
+                    className="w-full bg-green-500 hover:bg-green-400 text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 size={24} /> SIMULATE SUCCESS
+                  </button>
+                  <button 
+                    onClick={onClose}
+                    className="w-full bg-white/5 hover:bg-white/10 text-slate-400 font-bold py-3 rounded-2xl transition-all"
+                  >
+                    CANCEL TRANSACTION
+                  </button>
+                </div>
+
                 <div className="mt-8 flex gap-2">
                    <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce"></div>
                    <div className="h-2 w-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>

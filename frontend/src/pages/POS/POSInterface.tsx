@@ -151,7 +151,12 @@ const POSInterface: React.FC = () => {
     const { subtotal, taxTotal, grandTotal } = getTotals();
     const orderData = {
       id: crypto.randomUUID(), 
-      orderItems: cart,
+      invoiceNo: `OFFLINE-${Date.now()}`,
+      orderItems: cart.map((item: any) => ({
+        ...item,
+        price: item.sellingPrice, // Standardize for ReceiptPreview
+        total: item.sellingPrice * item.quantity
+      })),
       subtotal,
       taxTotal,
       grandTotal,
@@ -159,7 +164,7 @@ const POSInterface: React.FC = () => {
       discount: loyaltyDiscount,
       loyaltyPointsRedeemed: appliedPoints,
       customerId: customer?.id || null,
-      timestamp: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
 
     try {
@@ -177,15 +182,16 @@ const POSInterface: React.FC = () => {
       clearCart();
       setIsPaymentModalOpen(false);
       setIsPreviewOpen(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment Error:', error);
       // If online request fails, fall back to offline queue
       await addToSyncQueue('CREATE_ORDER', orderData);
       setRecentOrder(orderData);
       clearCart();
       setIsPaymentModalOpen(false);
-      setIsPreviewOpen(true);
-      alert('Order saved offline due to connection error.');
+      // Only show preview if it's a critical success or offline fallback
+      setIsPreviewOpen(true); 
+      alert(`Checkout Status: ${error.response?.data?.error || 'Server connection issue'}. Order saved locally.`);
     }
   };
 

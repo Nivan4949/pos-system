@@ -38,11 +38,11 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
               </div>
               <div className="flex justify-between">
                 <span>Date:</span>
-                <span>{new Date(order.createdAt).toLocaleString()}</span>
+                <span>{order.createdAt ? new Date(order.createdAt).toLocaleString() : new Date().toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Customer:</span>
-                <span className="font-bold">{order.customer?.name || 'Walk-in'}</span>
+                <span className="font-bold">{order.customer?.name || order.customerName || 'Walk-in'}</span>
               </div>
             </div>
 
@@ -55,14 +55,14 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {order.orderItems.map((item: any) => (
+                {order.orderItems?.map((item: any) => (
                   <tr key={item.id}>
                     <td className="py-2 pr-2">
-                      <p className="font-bold leading-tight">{item.product?.name || 'Product'}</p>
-                      <p className="text-[10px] text-slate-400">₹{item.price.toFixed(2)} + GST</p>
+                      <p className="font-bold leading-tight">{item.product?.name || item.name || 'Product'}</p>
+                      <p className="text-[10px] text-slate-400">₹{(item.price || 0).toFixed(2)} + GST</p>
                     </td>
                     <td className="py-2 text-center align-top">{item.quantity}</td>
-                    <td className="py-2 text-right align-top font-bold">₹{item.total.toFixed(2)}</td>
+                    <td className="py-2 text-right align-top font-bold">₹{(item.total || (item.price * item.quantity) || 0).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -71,19 +71,19 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
             <div className="border-t-2 border-double border-slate-300 pt-4 space-y-2">
               <div className="flex justify-between font-medium">
                 <span>Subtotal:</span>
-                <span>₹{order.subtotal.toFixed(2)}</span>
+                <span>₹{(order.subtotal || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs text-slate-500">
                 <span>CGST (9%):</span>
-                <span>₹{(order.taxTotal / 2).toFixed(2)}</span>
+                <span>₹{((order.taxTotal || 0) / 2).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs text-slate-500">
                 <span>SGST (9%):</span>
-                <span>₹{(order.taxTotal / 2).toFixed(2)}</span>
+                <span>₹{((order.taxTotal || 0) / 2).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-lg font-black pt-2 border-t border-slate-100">
                 <span>Grand Total:</span>
-                <span>₹{order.grandTotal.toFixed(2)}</span>
+                <span>₹{(order.grandTotal || 0).toFixed(2)}</span>
               </div>
             </div>
 

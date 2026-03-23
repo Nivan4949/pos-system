@@ -11,8 +11,11 @@ import LoginPage from './pages/Login';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import LicenseManagement from './pages/Admin/LicenseManagement';
 import DeviceManagement from './pages/Admin/DeviceManagement';
+import Settings from './pages/Settings/Settings';
 import PrivateRoute from './components/PrivateRoute';
 import useAuthStore from './store/authStore';
+
+import StockEntry from './pages/Inventory/StockEntry';
 
 function App() {
   const token = useAuthStore((state) => state.token);
@@ -43,13 +46,14 @@ function App() {
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<POSInterface />} />
             <Route path="/inventory" element={<ProductManagement />} />
+            <Route path="/stock-procurement" element={<StockEntry />} />
             <Route path="/customers" element={<CustomerManagement />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/expenses" element={<ExpenseManagement />} />
-            <Route path="/settings" element={<div className="p-8"><h1 className="text-2xl font-bold">System Settings Coming Soon</h1></div>} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/licenses" element={<LicenseManagement />} />
             <Route path="/admin/devices" element={<DeviceManagement />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
 
           {/* Catch-all */}

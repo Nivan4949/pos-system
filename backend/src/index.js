@@ -23,6 +23,7 @@ app.use(morgan('dev'));
 
 const syncRoutes = require('./api/syncRoutes');
 const inventoryRoutes = require('./api/inventoryRoutes');
+const purchaseRoutes = require('./api/purchaseRoutes');
 
 // Routes
 app.use('/api/products', productRoutes);
@@ -33,6 +34,7 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/purchases', purchaseRoutes);
 app.use('/api/licenses', require('./api/licenseRoutes'));
 app.use('/api/devices', require('./api/deviceRoutes'));
 

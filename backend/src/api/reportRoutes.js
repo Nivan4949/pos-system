@@ -28,6 +28,43 @@ const getDateRange = (filter, startDate, endDate) => {
   return { gte: start, lte: end };
 };
 
+// 0. Dashboard Summary for Admin
+router.get('/summary', async (req, res) => {
+  try {
+    const totalRevenue = await prisma.order.aggregate({
+      _sum: { grandTotal: true }
+    });
+    const totalOrders = await prisma.order.count();
+    const lowStockAlerts = await prisma.product.count({
+      where: { stockQuantity: { lt: 10 } }
+    });
+    const activeTerminals = await prisma.device.count({
+      where: { authorized: true }
+    });
+    const recentOrders = await prisma.order.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: { orderItems: true }
+    });
+    
+    // For distribution, let's get Sales by Category
+    const salesByCategory = await prisma.orderItem.groupBy({
+      by: ['productId'],
+      _sum: { total: true },
+      take: 10
+    });
+
+    res.json({
+      totalRevenue: totalRevenue._sum.grandTotal || 0,
+      totalOrders,
+      lowStockAlerts,
+      activeTerminals,
+      recentOrders,
+      distribution: [] // Optional: feature for later
+    });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 // 1. Sale Report
 router.get('/sales', async (req, res) => {
   try {
