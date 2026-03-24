@@ -328,11 +328,13 @@ const POSInterface: React.FC = () => {
                     onClick={() => addToCart(product)}
                     className="flex flex-col bg-white rounded-xl p-2 md:p-3 shadow-sm border border-transparent hover:border-blue-400 hover:shadow-md active:scale-95 transition-all text-left group"
                   >
-                    <div className="w-full h-24 md:h-32 bg-slate-50 mb-2 rounded-lg flex items-center justify-center overflow-hidden">
+                    <div className="w-full h-24 md:h-32 bg-slate-50 mb-2 rounded-lg flex items-center justify-center overflow-hidden border border-slate-100">
                       {product.image ? (
-                        <img src={product.image} alt={product.name} className="object-contain" />
+                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="text-slate-300 font-bold text-3xl md:text-4xl select-none group-hover:text-blue-200 transition-colors uppercase">{product.name.charAt(0)}</div>
+                        <span className="text-slate-300 font-black text-2xl md:text-3xl uppercase select-none group-hover:text-blue-400 font-mono transition-colors">
+                          {product.name.charAt(0)}
+                        </span>
                       )}
                     </div>
                     <div className="font-semibold text-slate-700 truncate text-xs md:text-sm mb-0.5">{product.name}</div>

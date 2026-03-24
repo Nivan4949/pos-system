@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/api';
 import useAuthStore from '../../store/authStore';
-import { Shield, Users, Key, AlertCircle, CheckCircle2, Loader2, Save, UserX, UserCheck, Tag, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Shield, Users, Key, AlertCircle, CheckCircle2, Loader2, Save, UserX, UserCheck, Tag, Plus, Edit2, Trash2, Image as ImageIcon, Search, Camera, X as CloseIcon } from 'lucide-react';
 
 const Settings = () => {
     const user = useAuthStore((state: any) => state.user);
-    const [activeTab, setActiveTab] = useState<'SECURITY' | 'USERS' | 'CATEGORIES'>(user?.role === 'ADMIN' ? 'USERS' : 'SECURITY');
+    const [activeTab, setActiveTab] = useState<'SECURITY' | 'USERS' | 'CATEGORIES' | 'PHOTOS'>(user?.role === 'ADMIN' ? 'USERS' : 'SECURITY');
     const [loading, setLoading] = useState(false);
     const [users, setUsers] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
+    const [searchProduct, setSearchProduct] = useState('');
     const [newCategoryName, setNewCategoryName] = useState('');
     const [editingCategory, setEditingCategory] = useState<any>(null);
     
@@ -42,9 +44,22 @@ const Settings = () => {
         }
     };
 
+    const fetchProducts = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get('/products');
+            setProducts(response.data);
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (activeTab === 'USERS') fetchUsers();
         if (activeTab === 'CATEGORIES') fetchCategories();
+        if (activeTab === 'PHOTOS') fetchProducts();
     }, [activeTab]);
 
     const handlePasswordChange = async (e: React.FormEvent) => {
@@ -133,6 +148,54 @@ const Settings = () => {
         }
     };
 
+    const handleImageUpload = async (productId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Simple check for image size (limit to 2MB for Base64 efficiency)
+        if (file.size > 2 * 1024 * 1024) {
+            alert("Image too large. Please select a photo under 2MB.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result as string;
+            setLoading(true);
+            try {
+                // Get current product data to preserve other fields
+                const product = products.find(p => p.id === productId);
+                await api.put(`/products/${productId}`, { 
+                    ...product, 
+                    image: base64String 
+                });
+                fetchProducts();
+            } catch (error) {
+                alert('Error uploading image');
+            } finally {
+                setLoading(false);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveImage = async (productId: string) => {
+        if (!confirm('Remove this product photo?')) return;
+        setLoading(true);
+        try {
+            const product = products.find(p => p.id === productId);
+            await api.put(`/products/${productId}`, { 
+                ...product, 
+                image: null 
+            });
+            fetchProducts();
+        } catch (error) {
+            alert('Error removing image');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="p-8 bg-slate-50 min-h-screen font-sans">
             <div className="max-w-4xl mx-auto">
@@ -157,6 +220,13 @@ const Settings = () => {
                     >
                         <Tag size={18} />
                         <span>Categories</span>
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('PHOTOS')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'PHOTOS' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                    >
+                        <ImageIcon size={18} />
+                        <span>Product Photos</span>
                     </button>
                     <button 
                         onClick={() => setActiveTab('SECURITY')}
@@ -274,7 +344,7 @@ const Settings = () => {
                                 </div>
                             </div>
                         </div>
-                    ) : (
+                    ) : activeTab === 'CATEGORIES' ? (
                         <div className="p-10">
                             <div className="flex items-center gap-4 mb-8">
                                 <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
@@ -353,7 +423,76 @@ const Settings = () => {
                                 </div>
                             </div>
                         </div>
-                    )}
+                    ) : activeTab === 'PHOTOS' ? (
+                        <div className="p-10">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
+                                        <Camera size={24} />
+                                    </div>
+                                    <h2 className="text-2xl font-black text-slate-800">Product Photo Gallery</h2>
+                                </div>
+                                <div className="relative max-w-xs w-full">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input 
+                                        type="text"
+                                        placeholder="Search products..."
+                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={searchProduct}
+                                        onChange={(e) => setSearchProduct(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                {products.filter(p => p.name.toLowerCase().includes(searchProduct.toLowerCase())).map((product) => (
+                                    <div key={product.id} className="bg-white border border-slate-100 rounded-[2rem] p-4 group hover:shadow-xl transition-all relative overflow-hidden">
+                                        <div className="aspect-square bg-slate-50 rounded-[1.5rem] mb-4 flex items-center justify-center relative overflow-hidden border-2 border-dashed border-slate-200 group-hover:border-blue-200 transition-colors">
+                                            {product.image ? (
+                                                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="text-slate-300 flex flex-col items-center gap-2">
+                                                    <ImageIcon size={48} strokeWidth={1} />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">No Media</span>
+                                                </div>
+                                            )}
+                                            
+                                            <label className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center cursor-pointer backdrop-blur-[2px]">
+                                                <input 
+                                                    type="file" 
+                                                    className="hidden" 
+                                                    accept="image/*" 
+                                                    onChange={(e) => handleImageUpload(product.id, e)}
+                                                />
+                                                <div className="bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs shadow-xl flex items-center gap-2">
+                                                    <Plus size={16} />
+                                                    {product.image ? 'CHANGE PHOTO' : 'UPLOAD PHOTO'}
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <div className="px-2">
+                                            <p className="font-bold text-slate-800 truncate mb-1">{product.name}</p>
+                                            <div className="flex justify-between items-center mt-2">
+                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{product.category?.name || 'GEN'}</p>
+                                                {product.image && (
+                                                    <button 
+                                                        onClick={() => handleRemoveImage(product.id)}
+                                                        className="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 transition-colors"
+                                                        title="Remove Photo"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {loading && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10"><Loader2 className="animate-spin text-blue-600" /></div>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
             </div>
         </div>

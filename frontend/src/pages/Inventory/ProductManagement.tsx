@@ -109,8 +109,12 @@ const ProductManagement = () => {
                   <tr key={product.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 shrink-0">
-                          <Package size={24} />
+                        <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 shrink-0 overflow-hidden border border-slate-200">
+                          {product.image ? (
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="font-black text-slate-300 text-xl uppercase">{product.name.charAt(0)}</span>
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-slate-800 truncate">{product.name}</p>
