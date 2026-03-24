@@ -366,34 +366,6 @@ const POSInterface: React.FC = () => {
             </button>
           </div>
 
-          {/* Customer Selection attached to Cart Section */}
-          <div className="px-3 md:px-4 py-2 md:py-3 border-b border-slate-100 bg-white shrink-0">
-            {customer ? (
-              <div className="flex justify-between items-center bg-indigo-50/50 p-2 md:p-3 rounded-xl border border-indigo-100">
-                <div className="flex items-center gap-3">
-                  <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
-                    <User size={18} />
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-800 text-sm">{customer.name}</div>
-                    <div className="text-[10px] md:text-xs text-slate-500">Pts: <span className="font-bold text-indigo-600">{customer.loyaltyPoints}</span> | Cr: ₹{customer.creditBalance}</div>
-                  </div>
-                </div>
-                <button onClick={() => setCustomer(null)} className="text-slate-400 hover:text-red-500 transition-colors p-1">
-                  <X size={16} />
-                </button>
-              </div>
-            ) : (
-              <button 
-                onClick={() => setIsCustomerModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 py-2 md:py-2.5 bg-slate-50 hover:bg-indigo-50 border border-dashed border-slate-300 hover:border-indigo-300 text-slate-500 hover:text-indigo-600 font-medium rounded-xl transition-all text-sm group"
-              >
-                <Plus size={16} className="group-hover:scale-110 transition-transform" />
-                <span>Add Customer for Loyalty</span>
-              </button>
-            )}
-          </div>
-
           {/* Cart Items List */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             {cart.length > 0 ? (
@@ -470,21 +442,13 @@ const POSInterface: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-3 gap-2 md:gap-3">
-              <button 
-                onClick={() => setIsRedeemModalOpen(true)}
-                className="py-3 md:py-4 col-span-1 bg-slate-800 hover:bg-indigo-600 text-indigo-300 hover:text-white font-bold rounded-xl md:rounded-2xl text-xs flex flex-col items-center justify-center transition-all disabled:opacity-50"
-                disabled={cart.length === 0 || !customer || customer.loyaltyPoints === 0}
-              >
-                <span>Redeem</span>
-                <span className="text-[10px] font-normal opacity-80">Points</span>
-              </button>
+            <div className="grid grid-cols-1 gap-2 md:gap-3">
               <button 
                 onClick={() => setIsPaymentModalOpen(true)}
-                className="py-3 md:py-4 col-span-2 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl md:rounded-2xl text-sm md:text-base shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="py-3 md:py-4 w-full bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl md:rounded-2xl text-sm md:text-base shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                 disabled={cart.length === 0}
               >
-                <CreditCard size={18} /> PAY NOW
+                <CreditCard size={18} /> PROCEED TO PAYMENT
               </button>
             </div>
           </div>
@@ -508,7 +472,6 @@ const POSInterface: React.FC = () => {
 
       {isPaymentModalOpen && (
         <PaymentModal 
-          total={grandTotal} 
           onClose={() => setIsPaymentModalOpen(false)}
           onPaymentComplete={handlePaymentComplete}
         />
