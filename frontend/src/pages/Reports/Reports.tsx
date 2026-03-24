@@ -90,15 +90,21 @@ const Reports = () => {
 
   const renderActiveReport = () => {
     if (loading) return <div className="p-20 text-center animate-pulse text-indigo-400">Loading Report Data...</div>;
-    if (!reportData && (activeReport === 'party-statement' || activeReport === 'stock-detail')) {
-      return <div className="p-20 text-center text-slate-400">Please select an entity from the dropdown above.</div>;
+    
+    if (!reportData) {
+       if (activeReport === 'party-statement' || activeReport === 'stock-detail') {
+         return <div className="p-20 text-center text-slate-400">Please select an entity from the dropdown above.</div>;
+       }
+       return <div className="p-20 text-center text-slate-400">No data available.</div>;
     }
-    if (!reportData) return <div className="p-20 text-center text-slate-400">No data available.</div>;
 
     // Based on activeReport, format the rendering
     switch (activeReport) {
       case 'sales':
-      case 'purchase':
+      case 'purchase': {
+        if (Array.isArray(reportData) || !reportData.summary || !reportData.details) {
+          return <div className="p-20 text-center animate-pulse text-indigo-400">Preparing Transactions...</div>;
+        }
         return (
           <div>
             <div className="grid grid-cols-3 gap-4 mb-6">
@@ -140,8 +146,10 @@ const Reports = () => {
             </div>
           </div>
         );
+      }
       
-      case 'profit-loss':
+      case 'profit-loss': {
+        if (Array.isArray(reportData)) return <div className="p-20 text-center animate-pulse text-indigo-400">Calculating...</div>;
         return (
           <div className="max-w-xl mx-auto space-y-4">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
@@ -168,10 +176,12 @@ const Reports = () => {
             </div>
           </div>
         );
+      }
 
       case 'daybook':
       case 'transactions':
-      case 'cashflow':
+      case 'cashflow': {
+        if (Array.isArray(reportData)) return <div className="p-20 text-center animate-pulse text-indigo-400">Streamlining logs...</div>;
         return (
           <div>
             <div className="grid grid-cols-3 gap-4 mb-6">
@@ -218,8 +228,10 @@ const Reports = () => {
             </div>
           </div>
         );
+      }
 
-      case 'stock-summary':
+      case 'stock-summary': {
+        if (Array.isArray(reportData)) return <div className="p-20 text-center animate-pulse text-indigo-400">Counting Stock...</div>;
         return (
           <div>
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -256,8 +268,10 @@ const Reports = () => {
             </div>
           </div>
         );
+      }
 
-      case 'expenses':
+      case 'expenses': {
+        if (Array.isArray(reportData)) return <div className="p-20 text-center animate-pulse text-indigo-400">Summing Expenses...</div>;
         return (
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -278,7 +292,7 @@ const Reports = () => {
                 </thead>
                 <tbody className="divide-y text-slate-700 font-medium">
                   {reportData.details?.map((item: any) => (
-                    <tr key={item.id} className="hover:bg-slate-50">
+                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4">{new Date(item.date).toLocaleDateString()}</td>
                       <td className="p-4 font-bold text-slate-900">{item.type}</td>
                       <td className="p-4 text-slate-500">{item.description || '-'}</td>
@@ -291,13 +305,17 @@ const Reports = () => {
             </div>
           </div>
         );
+      }
 
       case 'parties':
       case 'party-profit':
-      case 'item-profit':
+      case 'item-profit': {
         const isParty = activeReport === 'parties';
         const isItemProfit = activeReport === 'item-profit';
         
+        // Defensive check: if switching from a non-array report, wait for loading
+        if (!Array.isArray(reportData)) return <div className="p-20 text-center animate-pulse text-indigo-400">Switching Data Streams...</div>;
+
         // Calculate totals for summary row
         const totals = reportData.reduce((acc: any, curr: any) => ({
           qty: acc.qty + (curr.qtySold || 0),
@@ -372,8 +390,9 @@ const Reports = () => {
             </table>
           </div>
         );
+      }
 
-      case 'party-statement':
+      case 'party-statement': {
         return (
           <div>
              <div className="bg-indigo-50 p-6 rounded-2xl mb-6 flex justify-between items-center border border-indigo-100">
@@ -411,8 +430,9 @@ const Reports = () => {
             </div>
           </div>
         );
+      }
 
-      case 'balance-sheet':
+      case 'balance-sheet': {
         return (
           <div className="max-w-xl mx-auto space-y-4">
              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -432,8 +452,9 @@ const Reports = () => {
              </div>
           </div>
         );
+      }
 
-      case 'stock-detail':
+      case 'stock-detail': {
         return (
           <div>
             <div className="bg-white p-6 rounded-2xl mb-6 shadow-sm border flex justify-between items-center">
@@ -480,6 +501,7 @@ const Reports = () => {
              </div>
           </div>
         );
+      }
 
       default:
         return (
@@ -491,6 +513,7 @@ const Reports = () => {
         );
     }
   };
+
 
   return (
     <div className="flex flex-col md:flex-row h-full min-h-screen bg-slate-100 font-sans">
@@ -505,7 +528,7 @@ const Reports = () => {
                  {cat.reports.map(report => (
                    <button
                      key={report.id}
-                     onClick={() => { setActiveReport(report.id); setSelectedEntityId(''); }}
+                     onClick={() => { setReportData(null); setActiveReport(report.id); setSelectedEntityId(''); }}
                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm font-bold ${
                        activeReport === report.id 
                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' 
