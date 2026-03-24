@@ -30,4 +30,40 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   }
 });
 
+// Update category (Admin/Manager only)
+router.put('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'Name is required' });
+    
+    const category = await prisma.category.update({
+      where: { id },
+      data: { name }
+    });
+    res.json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete category (Admin only)
+router.delete('/:id', auth(['ADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Disconnect products before deleting category
+    await prisma.product.updateMany({
+      where: { categoryId: id },
+      data: { categoryId: null }
+    });
+    
+    await prisma.category.delete({
+      where: { id }
+    });
+    res.json({ message: 'Category deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

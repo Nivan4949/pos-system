@@ -25,6 +25,20 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
   
   const barcodeRef = useRef<SVGSVGElement>(null);
 
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/categories');
+        setCategories(res.data);
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   useEffect(() => {
     if (barcodeRef.current && formData.barcode) {
       JsBarcode(barcodeRef.current, formData.barcode, {
@@ -57,6 +71,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
         sellingPrice: Number(cleanData.sellingPrice) || 0,
         gstRate: Number(cleanData.gstRate) || 0,
         stockQuantity: Number(cleanData.stockQuantity) || 0,
+        categoryId: cleanData.categoryId || null
       };
 
       if (product?.id) {
@@ -122,7 +137,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
                 </button>
               </div>
               {formData.barcode && (
-                <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg text-center flex flex-col items-center">
+                <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg text-center flex flex-col items-center shadow-inner">
                   <svg ref={barcodeRef} className="max-w-full"></svg>
                   <button type="button" onClick={() => {
                         const printWindow = window.open('', '_blank');
@@ -155,18 +170,34 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onSave })
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Unit</label>
-              <select
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-              >
-                <option value="pcs">Pieces (pcs)</option>
-                <option value="kg">Kilograms (kg)</option>
-                <option value="ltr">Liters (ltr)</option>
-                <option value="box">Boxes (box)</option>
-              </select>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                <select
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  value={formData.categoryId || ''}
+                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value || null })}
+                >
+                  <option value="">General / No Category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Unit</label>
+                <select
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                >
+                  <option value="pcs">Pieces (pcs)</option>
+                  <option value="kg">Kilograms (kg)</option>
+                  <option value="ltr">Liters (ltr)</option>
+                  <option value="box">Boxes (box)</option>
+                </select>
+              </div>
             </div>
 
             <div>
