@@ -68,9 +68,10 @@ model Product {
   supplier       String?
   image          String?
   is_active      Boolean        @default(true)
-  orderItems     OrderItem[]
-  purchaseItems  PurchaseItem[]
-  inventoryLogs  InventoryLog[]
+  orderItems       OrderItem[]
+  purchaseItems    PurchaseItem[]
+  salesReturnItems SalesReturnItem[]
+  inventoryLogs    InventoryLog[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 }
@@ -85,6 +86,7 @@ model Customer {
   lastPurchaseDate DateTime?
   creditBalance    Float    @default(0)
   orders           Order[]
+  salesReturns     SalesReturn[]
   is_active        Boolean  @default(true)
   isSynced         Boolean  @default(false)
   serverId         String?  @unique
@@ -107,10 +109,41 @@ model Order {
   status                String      @default("COMPLETED")
   orderItems            OrderItem[]
   payments              Payment[]
+  salesReturns          SalesReturn[]
   isSynced              Boolean     @default(false)
   serverId              String?     @unique
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
+}
+
+model SalesReturn {
+  id            String            @id @default(uuid())
+  returnNo      String            @unique
+  order         Order?            @relation(fields: [orderId], references: [id])
+  orderId       String?
+  customer      Customer?         @relation(fields: [customerId], references: [id])
+  customerId    String?
+  subtotal      Float
+  taxTotal      Float
+  totalAmount   Float
+  reason        String?
+  status        String            @default("COMPLETED")
+  returnItems   SalesReturnItem[]
+  date          DateTime          @default(now())
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model SalesReturnItem {
+  id            String      @id @default(uuid())
+  salesReturn   SalesReturn @relation(fields: [salesReturnId], references: [id])
+  salesReturnId String
+  product       Product     @relation(fields: [productId], references: [id])
+  productId     String
+  quantity      Int
+  price         Float
+  taxAmount     Float
+  total         Float
 }
 
 model OrderItem {

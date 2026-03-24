@@ -38,6 +38,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/purchases', purchaseRoutes);
+app.use('/api/sales-returns', require('./api/salesReturnRoutes'));
 app.use('/api/licenses', require('./api/licenseRoutes'));
 app.use('/api/devices', require('./api/deviceRoutes'));
 

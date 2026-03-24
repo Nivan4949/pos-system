@@ -16,6 +16,7 @@ import PrivateRoute from './components/PrivateRoute';
 import useAuthStore from './store/authStore';
 
 import StockEntry from './pages/Inventory/StockEntry';
+import SalesReturn from './pages/Inventory/SalesReturn';
 
 function App() {
   const token = useAuthStore((state) => state.token);
@@ -47,6 +48,7 @@ function App() {
             <Route path="/" element={<POSInterface />} />
             <Route path="/inventory" element={<ProductManagement />} />
             <Route path="/stock-procurement" element={<StockEntry />} />
+            <Route path="/sales-return" element={<SalesReturn />} />
             <Route path="/customers" element={<CustomerManagement />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/expenses" element={<ExpenseManagement />} />
