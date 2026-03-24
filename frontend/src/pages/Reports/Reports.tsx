@@ -27,7 +27,7 @@ const reportCategories = [
     title: 'Item / Stock Reports',
     reports: [
       { id: 'stock-summary', name: 'Stock Summary', icon: <Package size={16} /> },
-      { id: 'item-profit', name: 'Item-wise Profit', icon: <TrendingUp size={16} /> },
+      { id: 'item-profit', name: 'Item Sales & Profit', icon: <TrendingUp size={16} /> },
       { id: 'stock-detail', name: 'Stock Detail', icon: <FileText size={16} /> },
     ]
   },
@@ -297,10 +297,19 @@ const Reports = () => {
       case 'item-profit':
         const isParty = activeReport === 'parties';
         const isItemProfit = activeReport === 'item-profit';
+        
+        // Calculate totals for summary row
+        const totals = reportData.reduce((acc: any, curr: any) => ({
+          qty: acc.qty + (curr.qtySold || 0),
+          revenue: acc.revenue + (curr.totalSales || curr.revenue || 0),
+          cost: acc.cost + (curr.cogs || curr.cost || 0),
+          profit: acc.profit + (curr.profit || 0)
+        }), { qty: 0, revenue: 0, cost: 0, profit: 0 });
+
         return (
           <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
             <table className="w-full text-left">
-              <thead className="bg-slate-50 text-xs text-slate-500 font-bold uppercase">
+              <thead className="bg-slate-50 text-xs text-slate-500 font-bold uppercase border-b">
                 <tr>
                   <th className="p-4">{isItemProfit ? 'Item Name' : 'Party Name'}</th>
                   {isParty ? (
@@ -312,6 +321,7 @@ const Reports = () => {
                     </>
                   ) : (
                     <>
+                      {isItemProfit && <th className="p-4 text-center">Qty Sold</th>}
                       <th className="p-4 text-right">Sales Revenue</th>
                       <th className="p-4 text-right">COGS / Cost</th>
                       <th className="p-4 text-right">Net Profit</th>
@@ -321,8 +331,8 @@ const Reports = () => {
               </thead>
               <tbody className="divide-y text-slate-700 font-medium">
                 {reportData.map((item: any, i: number) => (
-                  <tr key={i} className="hover:bg-slate-50">
-                    <td className="p-4 font-bold text-slate-900">{item.name}</td>
+                  <tr key={i} className="hover:bg-slate-50 transition-colors">
+                    <td className="p-4 font-bold text-slate-900 border-r border-slate-50">{item.name}</td>
                     {isParty ? (
                       <>
                         <td className="p-4 text-center">{item.phone || '-'}</td>
@@ -332,6 +342,7 @@ const Reports = () => {
                       </>
                     ) : (
                       <>
+                        {isItemProfit && <td className="p-4 text-center font-black text-indigo-600">{item.qtySold}</td>}
                         <td className="p-4 text-right font-bold text-green-600">₹{(item.totalSales || item.revenue)?.toFixed(2)}</td>
                         <td className="p-4 text-right text-red-500">₹{(item.cogs || item.cost)?.toFixed(2)}</td>
                         <td className="p-4 text-right font-black text-emerald-600">₹{item.profit?.toFixed(2)}</td>
@@ -339,7 +350,25 @@ const Reports = () => {
                     )}
                   </tr>
                 ))}
+                {reportData.length === 0 && (
+                  <tr>
+                    <td colSpan={isParty ? 5 : (isItemProfit ? 5 : 4)} className="p-12 text-center text-slate-400">
+                      No matching records found for this period.
+                    </td>
+                  </tr>
+                )}
               </tbody>
+              {!isParty && reportData.length > 0 && (
+                <tfoot className="bg-slate-900 text-white font-black text-sm">
+                  <tr>
+                    <td className="p-4 uppercase tracking-widest text-xs">Grand Totals</td>
+                    {isItemProfit && <td className="p-4 text-center">{totals.qty}</td>}
+                    <td className="p-4 text-right">₹{totals.revenue.toFixed(2)}</td>
+                    <td className="p-4 text-right">₹{totals.cost.toFixed(2)}</td>
+                    <td className="p-4 text-right">₹{totals.profit.toFixed(2)}</td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         );

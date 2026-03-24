@@ -281,7 +281,15 @@ router.get('/stock-summary', async (req, res) => {
 // 12. Item Wise Profit & Loss
 router.get('/item-profit', async (req, res) => {
   try {
+    const { filter, startDate, endDate } = req.query;
+    const dateRange = getDateRange(filter, startDate, endDate);
+
     const orderItems = await prisma.orderItem.findMany({
+      where: {
+        order: {
+          createdAt: dateRange
+        }
+      },
       include: { product: true }
     });
     
