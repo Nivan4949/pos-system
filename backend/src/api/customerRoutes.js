@@ -138,4 +138,17 @@ router.post('/loyalty/redeem', async (req, res) => {
   }
 });
 
+// Delete customer
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.customer.delete({
+      where: { id }
+    });
+    res.json({ message: 'Customer deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Package, BarChart3, Key, Smartphone, Settings, LogOut, Menu, X, Plus } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, BarChart3, Key, Smartphone, Settings, LogOut, Menu, X, Plus, Users } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 
 const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
@@ -12,6 +12,7 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     { icon: <LayoutDashboard size={22} />, label: 'Cloud Dashboard', path: '/admin/dashboard', roles: ['ADMIN'] },
     { icon: <Package size={22} />, label: 'Inventory Management', path: '/inventory', roles: ['ADMIN', 'MANAGER'] },
     { icon: <Package size={22} />, label: 'Stock Procurement', path: '/stock-procurement', roles: ['ADMIN', 'MANAGER'] },
+    { icon: <Users size={22} />, label: 'Customer Network', path: '/customers', roles: ['ADMIN', 'MANAGER', 'CASHIER'] },
     { icon: <BarChart3 size={22} />, label: 'Financial Reports', path: '/reports', roles: ['ADMIN', 'MANAGER'] },
     { icon: <LayoutDashboard size={22} />, label: 'Daily Expenses', path: '/expenses', roles: ['ADMIN', 'MANAGER'] },
     { icon: <Key size={22} />, label: 'License Desk', path: '/admin/licenses', roles: ['ADMIN'] },
