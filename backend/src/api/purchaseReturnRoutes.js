@@ -3,12 +3,12 @@ const router = express.Router();
 const prisma = require('../config/prisma');
 const auth = require('../middleware/auth');
 
-// Create new sales return (Credit Note)
-router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
+// Create new purchase return (Debit Note)
+router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { 
-      orderId, 
-      customerId, 
+      purchaseId, 
+      supplierName, 
       returnItems, 
       subtotal, 
       taxTotal, 
@@ -16,17 +16,17 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
       reason 
     } = req.body;
 
-    // Generate Return Number (e.g., RET-1710500000)
+    // Generate Return Number (e.g., DBN-1710500000)
     const timestamp = Date.now().toString().slice(-10);
-    const returnNo = `RET-${timestamp}`;
+    const returnNo = `DBN-${timestamp}`;
 
-    const salesReturn = await prisma.$transaction(async (tx) => {
-      // 1. Create the Sales Return
-      const newReturn = await tx.salesReturn.create({
+    const purchaseReturn = await prisma.$transaction(async (tx) => {
+      // 1. Create the Purchase Return
+      const newReturn = await tx.purchaseReturn.create({
         data: {
           returnNo,
-          orderId: orderId || null,
-          customerId: customerId || null,
+          purchaseId: purchaseId || null,
+          supplierName: supplierName || null,
           subtotal,
           taxTotal,
           totalAmount,
@@ -47,13 +47,13 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
         }
       });
 
-      // 2. Increment inventory and log it
+      // 2. Decrement inventory (Return to Supplier) and log it
       for (const item of returnItems) {
         await tx.product.update({
           where: { id: item.productId },
           data: {
             stockQuantity: {
-              increment: item.quantity
+              decrement: item.quantity
             }
           }
         });
@@ -61,21 +61,9 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
         await tx.inventoryLog.create({
           data: {
             productId: item.productId,
-            type: 'IN',
+            type: 'OUT',
             quantity: item.quantity,
-            reason: `Sales Return ${returnNo}`
-          }
-        });
-      }
-
-      // 3. Update customer credit balance if customerId is present
-      if (customerId) {
-        await tx.customer.update({
-          where: { id: customerId },
-          data: {
-            creditBalance: {
-              increment: totalAmount
-            }
+            reason: `Purchase Return ${returnNo}`
           }
         });
       }
@@ -83,15 +71,15 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
       return newReturn;
     });
 
-    res.json(salesReturn);
+    res.json(purchaseReturn);
   } catch (error) {
-    console.error('Sales Return Error:', error);
+    console.error('Purchase Return Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get all sales returns with filtering
-router.get('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
+// Get all purchase returns with filtering
+router.get('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { startDate, endDate, filter } = req.query;
     let where = {};
@@ -107,11 +95,10 @@ router.get('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
       where.createdAt = { gte: today };
     }
 
-    const returns = await prisma.salesReturn.findMany({
+    const returns = await prisma.purchaseReturn.findMany({
       where,
       include: {
-        customer: true,
-        order: true,
+        purchase: true,
         returnItems: {
           include: {
             product: true
@@ -130,20 +117,19 @@ router.get('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
 
     res.json({ details: returns, summary });
   } catch (error) {
-    console.error('Fetch Returns Error:', error);
+    console.error('Fetch Purchase Returns Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 // Get single return details
-router.get('/:id', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
+router.get('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { id } = req.params;
-    const salesReturn = await prisma.salesReturn.findUnique({
+    const purchaseReturn = await prisma.purchaseReturn.findUnique({
       where: { id },
       include: {
-        customer: true,
-        order: true,
+        purchase: true,
         returnItems: {
           include: {
             product: true
@@ -152,11 +138,11 @@ router.get('/:id', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
       }
     });
     
-    if (!salesReturn) {
-      return res.status(404).json({ error: 'Sales return not found' });
+    if (!purchaseReturn) {
+      return res.status(404).json({ error: 'Purchase return not found' });
     }
     
-    res.json(salesReturn);
+    res.json(purchaseReturn);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

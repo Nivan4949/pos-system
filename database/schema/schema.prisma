@@ -70,8 +70,9 @@ model Product {
   is_active      Boolean        @default(true)
   orderItems       OrderItem[]
   purchaseItems    PurchaseItem[]
-  salesReturnItems SalesReturnItem[]
-  inventoryLogs    InventoryLog[]
+  salesReturnItems    SalesReturnItem[]
+  purchaseReturnItems PurchaseReturnItem[]
+  inventoryLogs       InventoryLog[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 }
@@ -155,8 +156,37 @@ model OrderItem {
   quantity   Int
   price      Float
   discount   Float   @default(0)
-  taxAmount  Float
-  total      Float
+  taxAmount Float
+  total     Float
+}
+
+model PurchaseReturn {
+  id           String               @id @default(uuid())
+  returnNo     String               @unique
+  purchase     Purchase?            @relation(fields: [purchaseId], references: [id])
+  purchaseId   String?
+  supplierName String?
+  subtotal     Float
+  taxTotal     Float
+  totalAmount  Float
+  reason       String?
+  status       String               @default("COMPLETED")
+  returnItems  PurchaseReturnItem[]
+  date         DateTime             @default(now())
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model PurchaseReturnItem {
+  id               String         @id @default(uuid())
+  purchaseReturn   PurchaseReturn @relation(fields: [purchaseReturnId], references: [id])
+  purchaseReturnId String
+  product          Product        @relation(fields: [productId], references: [id])
+  productId        String
+  quantity         Int
+  price            Float
+  taxAmount        Float
+  total            Float
 }
 
 model InventoryLog {
@@ -198,9 +228,10 @@ model Purchase {
   grandTotal    Float
   paymentMode   String
   status        String         @default("COMPLETED")
-  date          DateTime       @default(now())
-  purchaseItems PurchaseItem[]
-  createdAt     DateTime       @default(now())
+  date            DateTime       @default(now())
+  purchaseItems   PurchaseItem[]
+  purchaseReturns PurchaseReturn[]
+  createdAt       DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
 

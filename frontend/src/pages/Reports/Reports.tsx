@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/api';
-import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, Calendar, FileText, IndianRupee, PieChart, Package, Receipt } from 'lucide-react';
+import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, Calendar, FileText, IndianRupee, PieChart, Package, Receipt, X } from 'lucide-react';
 
 const reportCategories = [
   {
@@ -11,6 +11,8 @@ const reportCategories = [
       { id: 'daybook', name: 'Day Book', icon: <FileText size={16} /> },
       { id: 'profit-loss', name: 'Profit & Loss', icon: <PieChart size={16} /> },
       { id: 'transactions', name: 'All Transactions', icon: <Receipt size={16} /> },
+      { id: 'credit-notes', name: 'Credit Note Report', icon: <TrendingUp className="rotate-180" size={16} /> },
+      { id: 'debit-notes', name: 'Debit Note Report', icon: <ShoppingBag className="rotate-180" size={16} /> },
       { id: 'cashflow', name: 'Cashflow', icon: <IndianRupee size={16} /> },
       { id: 'balance-sheet', name: 'Balance Sheet', icon: <BarChart3 size={16} /> },
     ]
@@ -48,6 +50,7 @@ const Reports = () => {
   const [loading, setLoading] = useState(false);
   const [selectedEntityId, setSelectedEntityId] = useState(''); // For specific party/item queries
   const [entities, setEntities] = useState<any[]>([]); // To populate dropdowns for statement/details
+  const [selectedReturn, setSelectedReturn] = useState<any>(null); // For Credit Note Detailed View
 
   // Initial load for specific entities
   useEffect(() => {
@@ -72,6 +75,9 @@ const Reports = () => {
     // Adjust URL for parameterized routes
     if (activeReport === 'party-statement') url = `/reports/party-statement/${selectedEntityId}`;
     if (activeReport === 'stock-detail') url = `/reports/stock-detail/${selectedEntityId}`;
+    if (activeReport === 'credit-notes') url = `/sales-returns?filter=${dateFilter}`;
+    if (activeReport === 'debit-notes') url = `/purchase-returns?filter=${dateFilter}`;
+    if ((activeReport === 'credit-notes' || activeReport === 'debit-notes') && dateFilter === 'Custom') url += `&startDate=${customStart}&endDate=${customEnd}`;
 
     try {
       const response = await api.get(url);
@@ -143,6 +149,64 @@ const Reports = () => {
                 </tbody>
               </table>
               {reportData.details.length === 0 && <div className="p-8 text-center text-slate-400">No records found.</div>}
+            </div>
+          </div>
+        );
+      }
+      
+      case 'credit-notes':
+      case 'debit-notes': {
+        const isCreditNote = activeReport === 'credit-notes';
+        if (Array.isArray(reportData) || !reportData.summary || !reportData.details) {
+          return <div className="p-20 text-center animate-pulse text-indigo-400">Loading {isCreditNote ? 'Credit' : 'Debit'} Notes...</div>;
+        }
+        return (
+          <div>
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Total {isCreditNote ? 'Refunded' : 'Returned Amount'}</p>
+                <h3 className={`text-2xl font-black ${isCreditNote ? 'text-red-600' : 'text-blue-600'}`}>₹{reportData.summary.totalReturns?.toFixed(2)}</h3>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Return Count</p>
+                <h3 className="text-2xl font-black text-slate-800">{reportData.summary.count}</h3>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Tax Reversed</p>
+                <h3 className="text-2xl font-black text-slate-800">₹{reportData.summary.totalTax?.toFixed(2)}</h3>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-x-auto">
+              <table className="w-full text-left font-sans">
+                <thead className="bg-slate-50 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                  <tr>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Return No</th>
+                    <th className="p-4">{isCreditNote ? 'Customer' : 'Supplier'}</th>
+                    <th className="p-4 text-right">Amount</th>
+                    <th className="p-4 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm font-medium text-slate-700">
+                  {reportData.details.map((item: any) => (
+                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4">{new Date(item.createdAt).toLocaleDateString()}</td>
+                      <td className="p-4 text-indigo-600 font-bold">{item.returnNo}</td>
+                      <td className="p-4">{isCreditNote ? (item.customer?.name || 'Walk-in') : (item.supplierName || 'N/A')}</td>
+                      <td className="p-4 text-right font-black text-slate-900">₹{item.totalAmount.toFixed(2)}</td>
+                      <td className="p-4 text-center">
+                        <button 
+                          onClick={() => setSelectedReturn(item)}
+                          className="text-indigo-600 hover:text-indigo-900 font-bold text-xs uppercase underline"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {reportData.details.length === 0 && <div className="p-8 text-center text-slate-400">No {isCreditNote ? 'credit' : 'debit'} notes found for this period.</div>}
             </div>
           </div>
         );
@@ -612,6 +676,74 @@ const Reports = () => {
           {renderActiveReport()}
         </div>
       </div>
+
+      {/* Credit Note Detailed View Modal */}
+      {selectedReturn && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+              <div>
+                 <h3 className="text-lg font-black uppercase tracking-tight">{activeReport === 'debit-notes' ? 'Debit' : 'Credit'} Note Details</h3>
+                 <p className="text-[10px] font-bold text-slate-400">{selectedReturn.returnNo} | {new Date(selectedReturn.createdAt).toLocaleString()}</p>
+              </div>
+              <button onClick={() => setSelectedReturn(null)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+               <div className={`${activeReport === 'debit-notes' ? 'bg-red-50 border-red-100' : 'bg-indigo-50 border-indigo-100'} p-4 rounded-2xl border`}>
+                 <p className={`text-[10px] font-black uppercase ${activeReport === 'debit-notes' ? 'text-red-400' : 'text-indigo-400'} mb-1`}>
+                   {activeReport === 'debit-notes' ? 'Supplier Name' : 'Customer Name'}
+                 </p>
+                 <p className={`text-lg font-black ${activeReport === 'debit-notes' ? 'text-red-900' : 'text-indigo-900'}`}>
+                   {activeReport === 'debit-notes' ? selectedReturn.supplierName : (selectedReturn.customer?.name || 'Walk-in')}
+                 </p>
+               </div>
+
+               <div>
+                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3">Returned Items</p>
+                 <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                   {selectedReturn.returnItems?.map((item: any, i: number) => (
+                     <div key={i} className="flex justify-between items-start py-3 border-b border-slate-100 last:border-none text-sm font-bold">
+                       <div>
+                         <p className="text-slate-800">{item.product?.name}</p>
+                         <p className="text-xs text-slate-500">{item.quantity} {item.product?.unit || 'Nos'} x ₹{item.price}</p>
+                       </div>
+                       <div className="text-right">
+                         <p className="text-slate-900">₹{item.total.toFixed(2)}</p>
+                         {item.taxAmount > 0 && <p className="text-[10px] text-emerald-500">Tax: ₹{item.taxAmount?.toFixed(2)}</p>}
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+
+               <div className="space-y-2 pt-2 border-t-2 border-dashed border-slate-100">
+                 <div className="flex justify-between text-xs text-slate-500 font-bold">
+                   <span>Subtotal</span>
+                   <span>₹{selectedReturn.subtotal.toFixed(2)}</span>
+                 </div>
+                 <div className="flex justify-between text-xs text-slate-500 font-bold">
+                   <span>Tax Amount</span>
+                   <span>₹{selectedReturn.taxTotal.toFixed(2)}</span>
+                 </div>
+                  <div className="flex justify-between py-3 mt-2 border-t font-black">
+                    <span className="text-lg text-slate-800">Total {activeReport === 'debit-notes' ? 'Return' : 'Refund'}</span>
+                    <span className={`text-2xl ${activeReport === 'debit-notes' ? 'text-blue-600' : 'text-red-600'}`}>₹{selectedReturn.totalAmount.toFixed(2)}</span>
+                  </div>
+               </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 flex justify-end">
+               <button onClick={() => setSelectedReturn(null)} className="px-6 py-2 bg-slate-900 text-white rounded-xl font-black text-sm uppercase tracking-tight">
+                 Close
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
