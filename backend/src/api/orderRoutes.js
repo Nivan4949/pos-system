@@ -99,11 +99,10 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
           where: { id: customerId },
           data: {
             loyaltyPoints: {
-              increment: loyaltyPointsEarned,
-              decrement: loyaltyPointsRedeemed
+              increment: loyaltyPointsEarned - (loyaltyPointsRedeemed || 0)
             },
             totalSpent: {
-              increment: grandTotal
+              increment: Number(grandTotal)
             },
             lastPurchaseDate: new Date()
           }
