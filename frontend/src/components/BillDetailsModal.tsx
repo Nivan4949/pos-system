@@ -19,7 +19,7 @@ const BillDetailsModal: React.FC<BillDetailsModalProps> = ({ billId, type, onClo
   const fetchBill = async () => {
     setLoading(true);
     try {
-      const endpoint = type === 'SALE' ? `/reports/orders/${billId}` : `/reports/purchase/${billId}`;
+      const endpoint = type === 'SALE' ? `/orders/${billId}` : `/purchases/${billId}`;
       const res = await api.get(endpoint);
       setBill(res.data);
       setItems(type === 'SALE' ? res.data.orderItems : res.data.purchaseItems);
@@ -63,7 +63,7 @@ const BillDetailsModal: React.FC<BillDetailsModalProps> = ({ billId, type, onClo
         grandTotal
       };
 
-      const endpoint = type === 'SALE' ? `/orders/${billId}` : `/purchase/${billId}`;
+      const endpoint = type === 'SALE' ? `/orders/${billId}` : `/purchases/${billId}`;
       await api.put(endpoint, payload);
       setIsEditing(false);
       fetchBill();
