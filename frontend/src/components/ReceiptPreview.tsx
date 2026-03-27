@@ -10,7 +10,103 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
   if (!order) return null;
 
     const handlePrint = () => {
-      window.print();
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+
+      const itemsHtml = order.orderItems?.map((item: any) => `
+        <tr>
+          <td style="padding: 5px 0;">
+            <div style="font-weight: bold;">${item.product?.name || item.name || 'Product'}</div>
+            <div style="font-size: 10px; color: #666;">₹${(item.price || 0).toFixed(2)} + GST</div>
+          </td>
+          <td style="padding: 5px 0; text-align: center;">${item.quantity}</td>
+          <td style="padding: 5px 0; text-align: right; font-weight: bold;">₹${(item.total || (item.price * item.quantity) || 0).toFixed(2)}</td>
+        </tr>
+      `).join('') || '';
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Print Bill - ${order.invoiceNo}</title>
+            <style>
+              @page { margin: 0; size: 80mm auto; }
+              body { 
+                width: 80mm; 
+                margin: 0; 
+                padding: 10mm; 
+                font-family: 'Courier New', Courier, monospace; 
+                font-size: 12px;
+                color: #000;
+                background: #fff;
+              }
+              .text-center { text-align: center; }
+              .text-right { text-align: right; }
+              .bold { font-weight: bold; }
+              .dashed-border { border-top: 1px dashed #000; margin: 10px 0; }
+              table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+              th { text-align: left; border-bottom: 1px solid #000; padding: 5px 0; font-size: 10px; text-transform: uppercase; }
+              .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+              .grand-total { border-top: 1px solid #000; padding-top: 10px; margin-top: 10px; font-size: 16px; font-weight: 900; }
+            </style>
+          </head>
+          <body>
+            <div class="text-center">
+              <h1 style="margin: 0; font-size: 18px; text-transform: uppercase;">Modern POS Retail</h1>
+              <p style="margin: 2px 0; font-size: 10px;">123, Business Hub, MG Road</p>
+              <p style="margin: 2px 0; font-size: 10px;">Bangalore - 560001</p>
+              <p style="margin: 5px 0; font-size: 10px; font-weight: bold;">GSTIN: 29AAAAA0000A1Z5</p>
+            </div>
+
+            <div class="dashed-border"></div>
+
+            <div style="margin-bottom: 10px;">
+              <div class="total-row"><span>Invoice:</span><span class="bold">${order.invoiceNo}</span></div>
+              <div class="total-row"><span>Date:</span><span>${order.createdAt ? new Date(order.createdAt).toLocaleString() : new Date().toLocaleString()}</span></div>
+              <div class="total-row"><span>Customer:</span><span class="bold">${order.customer?.name || order.customerName || 'Walk-in'}</span></div>
+            </div>
+
+            <div class="dashed-border"></div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th style="text-align: center;">Qty</th>
+                  <th style="text-align: right;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+
+            <div class="dashed-border"></div>
+
+            <div style="margin-top: 10px;">
+              <div class="total-row"><span>Subtotal:</span><span>₹${(order.subtotal || 0).toFixed(2)}</span></div>
+              <div class="total-row"><span>CGST (9%):</span><span>₹${((order.taxTotal || 0) / 2).toFixed(2)}</span></div>
+              <div class="total-row"><span>SGST (9%):</span><span>₹${((order.taxTotal || 0) / 2).toFixed(2)}</span></div>
+              <div class="total-row grand-total">
+                <span>Grand Total:</span>
+                <span>₹${(order.grandTotal || 0).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center; font-size: 10px; font-style: italic;">
+              <p>Thank you for shopping with us!</p>
+              <p>Digital Bill Generated via POS Pro</p>
+            </div>
+
+            <script>
+              window.onload = () => {
+                window.print();
+                setTimeout(() => window.close(), 500);
+              };
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
     };
 
     return (
@@ -107,37 +203,6 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
             </button>
           </div>
         </div>
-        <style>{`
-          @media print {
-            @page {
-              margin: 0;
-              size: 80mm 297mm; /* Standard 80mm thermal paper width */
-            }
-            body {
-              width: 80mm;
-              margin: 0 auto;
-              background-color: white;
-            }
-            body * {
-              visibility: hidden;
-            }
-            #receipt-content, #receipt-content * {
-              visibility: visible;
-              color: black !important;
-            }
-            #receipt-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 80mm;
-              padding: 5mm !important;
-              font-family: monospace;
-            }
-            .print\\:hidden {
-              display: none !important;
-            }
-          }
-        `}</style>
       </div>
     );
 };
