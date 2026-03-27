@@ -145,7 +145,29 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
   }
 });
 
-// Share order via WhatsApp (Automated)
+// Share order via WhatsApp (Manual trigger from UI)
+router.post('/share-whatsapp', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
+  try {
+    const { orderId, phone } = req.body;
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: { product: true }
+        }
+      }
+    });
+
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    
+    await whatsappUtil.sendReceipt(order, phone);
+    res.json({ success: true, message: 'WhatsApp message triggered' });
+  } catch (error) {
+    console.error('WhatsApp Share Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get order by ID
 router.get('/:id', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
   try {
