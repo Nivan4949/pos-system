@@ -146,24 +146,138 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
 });
 
 // Share order via WhatsApp (Automated)
-router.post('/share-whatsapp', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
+// Update existing order (Full edit with inventory reversal)
+router.put('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
-    const { orderId, phone } = req.body;
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        orderItems: {
-          include: { product: true }
-        }
+    const { id } = req.params;
+    const { orderItems: newItems, subtotal, discount, taxTotal, grandTotal, paymentMode, customerId } = req.body;
+
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      // 1. Fetch old order with items
+      const oldOrder = await tx.order.findUnique({
+        where: { id },
+        include: { orderItems: true, customer: true }
+      });
+
+      if (!oldOrder) throw new Error('Order not found');
+
+      // 2. REVERSE: Increment inventory for old items
+      for (const item of oldOrder.orderItems) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: { increment: item.quantity } }
+        });
+        await tx.inventoryLog.create({
+          data: {
+            productId: item.productId,
+            type: 'IN',
+            quantity: item.quantity,
+            reason: `Edit Reverse: ${oldOrder.invoiceNo}`
+          }
+        });
       }
+
+      // 3. REVERSE: Loyalty and Spending
+      if (oldOrder.customerId) {
+        await tx.customer.update({
+          where: { id: oldOrder.customerId },
+          data: {
+            loyaltyPoints: { decrement: oldOrder.loyaltyPointsEarned - (oldOrder.loyaltyPointsRedeemed || 0) },
+            totalSpent: { decrement: oldOrder.grandTotal }
+          }
+        });
+      }
+
+      // 4. APPLY: Delete old items
+      await tx.orderItem.deleteMany({ where: { orderId: id } });
+      await tx.payments ? await tx.payment.deleteMany({ where: { orderId: id } }) : null;
+
+      // 5. APPLY: Create new items and update stock
+      const earnRate = 100;
+      const newLoyaltyPointsEarned = Math.floor(grandTotal / earnRate);
+
+      for (const item of newItems) {
+        // Double check stock for new quantities
+        const pid = item.productId || item.id;
+        const product = await tx.product.findUnique({ where: { id: pid } });
+        if (!product) throw new Error(`Product not found`);
+        
+        await tx.product.update({
+          where: { id: pid },
+          data: { stockQuantity: { decrement: item.quantity } }
+        });
+
+        await tx.inventoryLog.create({
+          data: {
+            productId: pid,
+            type: 'OUT',
+            quantity: item.quantity,
+            reason: `Edit Apply: ${oldOrder.invoiceNo}`
+          }
+        });
+      }
+
+      // 6. UPDATE Order Record
+      const finalOrder = await tx.order.update({
+        where: { id },
+        data: {
+          customerId,
+          subtotal,
+          discount,
+          taxTotal,
+          grandTotal,
+          paymentMode,
+          loyaltyPointsEarned: newLoyaltyPointsEarned,
+          orderItems: {
+            create: newItems.map((item) => {
+              const pid = item.productId || item.id;
+              const price = item.price || item.sellingPrice;
+              const gst = parseFloat(item.gstRate || 18);
+              return {
+                productId: pid,
+                quantity: item.quantity,
+                price: price,
+                discount: item.discount || 0,
+                taxAmount: (price * (gst / 100)) * item.quantity,
+                total: (price * item.quantity) + ((price * (gst / 100)) * item.quantity)
+              };
+            })
+          },
+          payments: {
+            create: {
+              method: paymentMode,
+              amount: grandTotal,
+              status: 'SUCCESS'
+            }
+          }
+        },
+        include: { orderItems: { include: { product: true } }, payments: true }
+      });
+
+      // 7. Update new customer loyalty/spent
+      if (customerId) {
+        await tx.customer.update({
+          where: { id: customerId },
+          data: {
+            loyaltyPoints: { increment: newLoyaltyPointsEarned },
+            totalSpent: { increment: Number(grandTotal) }
+          }
+        });
+      }
+
+      // 8. Emit events
+      const io = req.app.get('io');
+      if (io) {
+          io.emit('INVENTORY_UPDATE', { items: newItems });
+          io.emit('ORDER_UPDATED', finalOrder);
+      }
+
+      return finalOrder;
     });
 
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-    
-    await whatsappUtil.sendReceipt(order, phone);
-    res.json({ success: true, message: 'WhatsApp message triggered' });
+    res.json(updatedOrder);
   } catch (error) {
-    console.error('WhatsApp Share Error:', error);
+    console.error('Update Order Error:', error);
     res.status(500).json({ error: error.message });
   }
 });

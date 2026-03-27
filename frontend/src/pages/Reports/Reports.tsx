@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/api';
 import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, Calendar, FileText, IndianRupee, PieChart, Package, Receipt, X } from 'lucide-react';
 import PartyDetailsModal from '../../components/PartyDetailsModal';
+import BillDetailsModal from '../../components/BillDetailsModal';
 
 const reportCategories = [
   {
@@ -53,6 +54,7 @@ const Reports = () => {
   const [entities, setEntities] = useState<any[]>([]); // To populate dropdowns for statement/details
   const [selectedReturn, setSelectedReturn] = useState<any>(null); // For Credit Note Detailed View
   const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null);
+  const [selectedBill, setSelectedBill] = useState<{id: string, type: 'SALE' | 'PURCHASE'} | null>(null);
 
   // Initial load for specific entities
   useEffect(() => {
@@ -143,7 +145,14 @@ const Reports = () => {
                   {reportData.details.map((item: any) => (
                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4">{new Date(item.createdAt).toLocaleDateString()}</td>
-                      <td className="p-4 text-indigo-600 font-bold">{item.invoiceNo}</td>
+                      <td className="p-4">
+                        <button 
+                          onClick={() => setSelectedBill({ id: item.id, type: activeReport === 'sales' ? 'SALE' : 'PURCHASE' })}
+                          className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline"
+                        >
+                          {item.invoiceNo}
+                        </button>
+                      </td>
                       <td className="p-4">
                         {activeReport === 'sales' ? (
                           item.customerId ? (
@@ -319,13 +328,25 @@ const Reports = () => {
                         {t.customerId ? (
                           <button 
                             onClick={() => setSelectedPartyId(t.customerId)}
-                            className="text-indigo-600 hover:text-indigo-800 font-black hover:underline text-left"
+                            className="text-indigo-600 hover:text-indigo-800 font-black hover:underline text-left mr-2"
                           >
-                            {t.details}
+                            {t.details.split(': ')[0]}:
                           </button>
                         ) : (
-                          t.details
+                          <span>{t.details.split(': ')[0]}: </span>
                         )}
+                        <button 
+                          onClick={() => {
+                            const type = t.type === 'SALE' ? 'SALE' : 'PURCHASE';
+                            // We need the ID. Daybook doesn't always have ID for both. 
+                            // But usually Bill: INV-XXX is unique.
+                            // I'll update daybook route to include the original activity ID.
+                            if (t.id) setSelectedBill({ id: t.id, type });
+                          }}
+                          className={`${t.id ? 'text-indigo-600 hover:text-indigo-800 font-bold hover:underline' : 'text-slate-600'}`}
+                        >
+                          {t.details.split(': ')[1]}
+                        </button>
                       </td>
                       <td className={`p-4 text-right font-black ${t.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {t.amount > 0 ? '+' : ''}₹{t.amount.toFixed(2)}
@@ -821,6 +842,15 @@ const Reports = () => {
         <PartyDetailsModal 
           partyId={selectedPartyId} 
           onClose={() => setSelectedPartyId(null)} 
+          onUpdate={fetchReport}
+        />
+      )}
+      {/* Bill Details & Edit Modal */}
+      {selectedBill && (
+        <BillDetailsModal 
+          billId={selectedBill.id}
+          type={selectedBill.type}
+          onClose={() => setSelectedBill(null)}
           onUpdate={fetchReport}
         />
       )}

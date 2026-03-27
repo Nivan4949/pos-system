@@ -177,9 +177,9 @@ router.get('/daybook', async (req, res) => {
     const expenses = await prisma.expense.findMany({ where: { createdAt: dateRange } });
     
     const transactions = [
-      ...sales.map(s => ({ type: 'SALE', amount: s.grandTotal, date: s.createdAt, details: `Bill: ${s.invoiceNo}`, customerId: s.customerId })),
-      ...purchases.map(p => ({ type: 'PURCHASE', amount: -p.grandTotal, date: p.createdAt, details: `Inv: ${p.invoiceNo}` })),
-      ...expenses.map(e => ({ type: 'EXPENSE', amount: -e.amount, date: e.createdAt, details: e.type }))
+      ...sales.map(s => ({ id: s.id, type: 'SALE', amount: s.grandTotal, date: s.createdAt, details: `Bill: ${s.invoiceNo}`, customerId: s.customerId })),
+      ...purchases.map(p => ({ id: p.id, type: 'PURCHASE', amount: -p.grandTotal, date: p.createdAt, details: `Inv: ${p.invoiceNo}` })),
+      ...expenses.map(e => ({ id: e.id, type: 'EXPENSE', amount: -e.amount, date: e.createdAt, details: e.type }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     const cashIn = sales.reduce((sum, s) => sum + s.grandTotal, 0);
