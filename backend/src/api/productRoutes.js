@@ -83,7 +83,7 @@ router.put('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
       brand,
       purchasePrice: parseFloat(purchasePrice) || 0,
       sellingPrice: parseFloat(sellingPrice) || 0,
-      gstRate: parseFloat(gstRate) || 0,
+      gstRate: parseFloat(gstRate ?? 18),
       stockQuantity: parseInt(stockQuantity) || 0,
       unit,
       supplier,
