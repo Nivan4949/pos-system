@@ -36,7 +36,7 @@ const NumericKeypad: React.FC<NumericKeypadProps> = ({ onInput, onClear, onDelet
       </button>
       <button
         onClick={onConfirm}
-        className="col-span-2 h-16 bg-green-600 hover:bg-green-500 text-white text-xl font-black rounded-xl shadow-sm active:scale-95 transition-all uppercase tracking-widest"
+        className="col-span-2 h-16 bg-green-600 hover:bg-green-500 text-white text-xl font-black rounded-xl shadow-sm active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center"
       >
         ENTER
       </button>

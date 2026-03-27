@@ -186,7 +186,7 @@ const POSInterface: React.FC = () => {
       invoiceNo: `OFFLINE-${Date.now()}`,
       orderItems: cart.map((item: any) => ({
         ...item,
-        price: item.sellingPrice, // Standardize for ReceiptPreview
+        price: item.sellingPrice,
         total: item.sellingPrice * item.quantity
       })),
       subtotal,
@@ -199,31 +199,33 @@ const POSInterface: React.FC = () => {
       createdAt: new Date().toISOString(),
     };
 
+    // --- INSTANT UI FEEDBACK ---
+    // 1. Set recent order to local data immediately for the preview
+    setRecentOrder(orderData);
+    // 2. Clear cart and close modal instantly
+    clearCart();
+    setIsPaymentModalOpen(false);
+    // 3. Open preview modal instantly
+    setIsPreviewOpen(true);
+
+    // --- BACKGROUND PROCESSING ---
     try {
       if (isOnline) {
         const response = await api.post('/orders', orderData, {
           headers: { 'x-terminal-id': 'T1' }
         });
+        // 4. Update with real server data (e.g., proper invoice number) once confirmed
         setRecentOrder(response.data);
       } else {
-        // Offline Flow: Add to Sync Queue
         await addToSyncQueue('CREATE_ORDER', orderData);
-        setRecentOrder(orderData);
-        alert('Order saved offline. It will sync when internet returns.');
+        // UI already updated with orderData
       }
-      clearCart();
-      setIsPaymentModalOpen(false);
-      setIsPreviewOpen(true);
     } catch (error: any) {
-      console.error('Payment Error:', error);
-      // If online request fails, fall back to offline queue
+      console.error('Payment Sync Error:', error);
+      // Fallback to offline queue if online request fails
       await addToSyncQueue('CREATE_ORDER', orderData);
-      setRecentOrder(orderData);
-      clearCart();
-      setIsPaymentModalOpen(false);
-      // Only show preview if it's a critical success or offline fallback
-      setIsPreviewOpen(true); 
-      alert(`Checkout Status: ${error.response?.data?.error || 'Server connection issue'}. Order saved locally.`);
+      // No need to alert the user if they're already looking at the preview,
+      // the sync system will handle it in the background.
     }
   };
 

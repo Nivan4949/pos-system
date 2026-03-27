@@ -16,8 +16,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onPaymentComplete, onClose 
   
   const [amountPaid, setAmountPaid] = useState('0');
   const [paymentMethod, setPaymentMethod] = useState('CASH');
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
+   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
+   const [loading, setLoading] = useState(false);
 
   const handleKeypadInput = (val: string) => {
     setAmountPaid((prev) => (prev === '0' ? val : prev + val));
@@ -155,11 +156,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onPaymentComplete, onClose 
                 <p className="text-slate-400 text-sm mb-10 max-w-[250px] mx-auto">Please complete the payment on your device to continue.</p>
                 
                 <div className="flex flex-col gap-4 w-full max-w-[320px]">
-                  <button 
-                    onClick={() => onPaymentComplete(paymentMethod, grandTotal.toString())}
-                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                   <button 
+                    disabled={loading}
+                    onClick={() => {
+                      setLoading(true);
+                      onPaymentComplete(paymentMethod, grandTotal.toString());
+                    }}
+                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    <CheckCircle2 size={24} /> MARK AS SUCCESS
+                    {loading ? <div className="h-6 w-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : <><CheckCircle2 size={24} /> MARK AS SUCCESS</>}
                   </button>
                   <button 
                     onClick={onClose}
@@ -176,12 +181,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onPaymentComplete, onClose 
                 </div>
              </div>
            ) : (
-             <NumericKeypad 
-               onInput={handleKeypadInput}
-               onDelete={handleKeypadDelete}
-               onClear={handleKeypadClear}
-               onConfirm={() => parseFloat(amountPaid) >= grandTotal && onPaymentComplete(paymentMethod, amountPaid)}
-             />
+              <NumericKeypad 
+                onInput={handleKeypadInput}
+                onDelete={handleKeypadDelete}
+                onClear={handleKeypadClear}
+                onConfirm={() => {
+                  if (parseFloat(amountPaid) >= grandTotal && !loading) {
+                    setLoading(true);
+                    onPaymentComplete(paymentMethod, amountPaid);
+                  }
+                }}
+              />
            )}
         </div>
       </div>
