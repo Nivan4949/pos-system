@@ -101,7 +101,7 @@ const PartyDetailsModal: React.FC<PartyDetailsModalProps> = ({ partyId, onClose,
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2 font-black">Full Name</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Full Name</label>
                   <input 
                     type="text" 
                     required

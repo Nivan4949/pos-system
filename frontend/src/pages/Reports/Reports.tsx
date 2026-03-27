@@ -794,6 +794,14 @@ const Reports = () => {
           </div>
         </div>
       )}
+      {/* Party Details & Edit Modal */}
+      {selectedPartyId && (
+        <PartyDetailsModal 
+          partyId={selectedPartyId} 
+          onClose={() => setSelectedPartyId(null)} 
+          onUpdate={fetchReport}
+        />
+      )}
     </div>
   );
 };
