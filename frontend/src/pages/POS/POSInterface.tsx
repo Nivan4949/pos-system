@@ -351,9 +351,9 @@ const POSInterface: React.FC = () => {
                         <span className="bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded uppercase tracking-tighter shadow-lg shadow-red-500/40">Out of Stock</span>
                       </div>
                     )}
-                    <div className="w-full h-24 md:h-32 bg-slate-50 mb-2 rounded-lg flex items-center justify-center overflow-hidden border border-slate-100">
+                    <div className="w-full h-24 md:h-32 bg-slate-50 mb-2 rounded-lg flex items-center justify-center overflow-hidden border border-slate-100 p-1">
                       {product.image ? (
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                        <img src={product.image} alt={product.name} className="w-full h-full object-contain" />
                       ) : (
                         <span className="text-slate-300 font-black text-2xl md:text-3xl uppercase select-none group-hover:text-blue-400 font-mono transition-colors">
                           {product.name.charAt(0)}
