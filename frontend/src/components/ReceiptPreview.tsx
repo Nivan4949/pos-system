@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Printer, Share2 } from 'lucide-react';
+import WhatsAppShareModal from './WhatsAppShareModal';
 
 interface ReceiptPreviewProps {
   order: any;
@@ -7,6 +8,8 @@ interface ReceiptPreviewProps {
 }
 
 const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
+  const [showWhatsAppModal, setShowWhatsAppModal] = React.useState(false);
+
   if (!order) return null;
 
     const handlePrint = () => {
@@ -112,6 +115,28 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
       printWindow.document.close();
     };
 
+    const handleWhatsAppProceed = (phone: string) => {
+      const items = order.orderItems?.map((item: any) => {
+        const name = item.product?.name || item.name || 'Product';
+        return `• ${name} x ${item.quantity} = ₹${(item.total || (item.price * item.quantity)).toFixed(2)}`;
+      }).join('\n') || '';
+
+      const message = `*TAX INVOICE FROM MODERN POS RETAIL*\n\n` +
+                      `Invoice: *${order.invoiceNo}*\n` +
+                      `Date: ${new Date().toLocaleDateString()}\n` +
+                      `Customer: ${order.customer?.name || order.customerName || 'Walk-in'}\n\n` +
+                      `*ITEMS:*\n${items}\n\n` +
+                      `Subtotal: ₹${(order.subtotal || 0).toFixed(2)}\n` +
+                      `Tax (GST): ₹${(order.taxTotal || 0).toFixed(2)}\n` +
+                      `*Grand Total: ₹${(order.grandTotal || 0).toFixed(2)}*\n\n` +
+                      `Thank you for shopping with us! 🙏\n` +
+                      `_Digital Receipt via POS Pro_`;
+
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/91${phone}?text=${encodedMessage}`, '_blank');
+      setShowWhatsAppModal(false);
+    };
+
     return (
       <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 print:p-0 print:bg-white print:relative">
         <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[700px] animate-in slide-in-from-bottom-8 print:shadow-none print:w-full print:h-auto print:rounded-none">
@@ -193,7 +218,10 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
           </div>
 
           <div className="p-6 bg-slate-50 border-t flex gap-4 print:hidden">
-            <button className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-all">
+            <button 
+              onClick={() => setShowWhatsAppModal(true)}
+              className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-all"
+            >
               <Share2 size={18} />
               <span>WhatsApp</span>
             </button>
@@ -206,6 +234,13 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
             </button>
           </div>
         </div>
+
+        {showWhatsAppModal && (
+          <WhatsAppShareModal 
+            onClose={() => setShowWhatsAppModal(false)}
+            onProceed={handleWhatsAppProceed}
+          />
+        )}
       </div>
     );
 };
