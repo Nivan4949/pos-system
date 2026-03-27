@@ -209,24 +209,26 @@ const POSInterface: React.FC = () => {
     setIsPreviewOpen(true);
 
     // --- BACKGROUND PROCESSING ---
-    try {
-      if (isOnline) {
-        const response = await api.post('/orders', orderData, {
-          headers: { 'x-terminal-id': 'T1' }
-        });
-        // 4. Update with real server data (e.g., proper invoice number) once confirmed
-        setRecentOrder(response.data);
-      } else {
+    setTimeout(async () => {
+      try {
+        if (isOnline) {
+          const response = await api.post('/orders', orderData, {
+            headers: { 'x-terminal-id': 'T1' }
+          });
+          // 4. Update with real server data (e.g., proper invoice number) once confirmed
+          setRecentOrder(response.data);
+        } else {
+          await addToSyncQueue('CREATE_ORDER', orderData);
+          // UI already updated with orderData
+        }
+      } catch (error: any) {
+        console.error('Payment Sync Error:', error);
+        // Fallback to offline queue if online request fails
         await addToSyncQueue('CREATE_ORDER', orderData);
-        // UI already updated with orderData
+        // No need to alert the user if they're already looking at the preview,
+        // the sync system will handle it in the background.
       }
-    } catch (error: any) {
-      console.error('Payment Sync Error:', error);
-      // Fallback to offline queue if online request fails
-      await addToSyncQueue('CREATE_ORDER', orderData);
-      // No need to alert the user if they're already looking at the preview,
-      // the sync system will handle it in the background.
-    }
+    }, 0);
   };
 
   const { subtotal, taxTotal, grandTotal } = getTotals();
