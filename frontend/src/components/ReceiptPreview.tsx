@@ -1,3 +1,4 @@
+import React from 'react';
 import { X, Printer, Share2 } from 'lucide-react';
 import WhatsAppShareModal from './WhatsAppShareModal';
 import api from '../api/api';
