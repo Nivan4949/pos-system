@@ -267,7 +267,8 @@ const Reports = () => {
                 <thead className="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
                   <tr>
                     <th className="p-4">Date</th>
-                    <th className="p-4">Type</th>
+                    <th className="p-4 text-center">Time</th>
+                    <th className="p-4 text-center">Type</th>
                     <th className="p-4">Details</th>
                     <th className="p-4 text-right">Amount</th>
                   </tr>
@@ -275,8 +276,9 @@ const Reports = () => {
                 <tbody className="divide-y divide-slate-100 text-sm font-medium">
                   {reportData.transactions?.map((t: any, i: number) => (
                     <tr key={i} className="hover:bg-slate-50">
-                      <td className="p-4 text-slate-600">{new Date(t.date).toLocaleTimeString()}</td>
-                      <td className="p-4">
+                      <td className="p-4 text-slate-600 font-bold">{new Date(t.date).toLocaleDateString()}</td>
+                      <td className="p-4 text-slate-500 text-center">{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
+                      <td className="p-4 text-center">
                         <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-black ${t.type === 'SALE' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                           {t.type}
                         </span>
