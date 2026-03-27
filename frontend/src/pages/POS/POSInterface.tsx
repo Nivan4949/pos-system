@@ -396,16 +396,26 @@ const POSInterface: React.FC = () => {
             {cart.length > 0 ? (
               <div className="divide-y divide-slate-50">
                 {cart.map((item: CartItem) => (
-                  <div key={item.id} className="p-3 md:p-4 hover:bg-slate-50/50 transition-colors flex gap-3 md:gap-4 animate-in fade-in slide-in-from-right-4">
+                  <div key={item.id} className="p-3 md:p-4 hover:bg-slate-50/50 transition-colors flex gap-3 md:gap-4 animate-in fade-in slide-in-from-right-4 group relative">
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-slate-800 text-sm md:text-base truncate">{item.name}</div>
+                      <div className="font-medium text-slate-800 text-sm md:text-base truncate pr-6">{item.name}</div>
                       <div className="text-xs md:text-sm text-slate-500 flex items-center gap-1.5">
                          <span>₹{item.sellingPrice.toFixed(2)}</span>
                          <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
                          <span className="truncate">{item.category?.name || 'General'}</span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5">
+                    
+                    {/* Individual Delete Button */}
+                    <button 
+                      onClick={() => removeFromCart(item.id)}
+                      className="absolute top-3 right-3 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      title="Remove item"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+
+                    <div className="flex flex-col items-end gap-1.5 pt-1">
                       <div className="flex items-center bg-slate-100 rounded-lg p-0.5 md:p-1">
                         <button 
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
