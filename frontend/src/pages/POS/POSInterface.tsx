@@ -129,9 +129,13 @@ const POSInterface: React.FC = () => {
         // Find product by barcode
         const product = products.find((p: Product) => p.barcode === decodedText);
         if (product) {
-          addToCart(product);
-          setShowScanner(false);
-          scanner.clear();
+          if (product.stockQuantity > 0) {
+            addToCart(product);
+            setShowScanner(false);
+            scanner.clear();
+          } else {
+            alert(`Product ${product.name} is out of stock.`);
+          }
         }
       }, (error: any) => {
         // Ignore errors
@@ -157,7 +161,11 @@ const POSInterface: React.FC = () => {
         if (barcodeBuffer.length > 3) {
           const product = products.find(p => p.barcode === barcodeBuffer);
           if (product) {
-            addToCart(product);
+            if (product.stockQuantity > 0) {
+              addToCart(product);
+            } else {
+              alert(`Product ${product.name} is out of stock.`);
+            }
           } else {
             console.warn('Barcode scanned but no product found:', barcodeBuffer);
           }
@@ -329,9 +337,19 @@ const POSInterface: React.FC = () => {
                 products.map((product) => (
                   <button
                     key={product.id}
-                    onClick={() => addToCart(product)}
-                    className="flex flex-col bg-white rounded-xl p-2 md:p-3 shadow-sm border border-transparent hover:border-blue-400 hover:shadow-md active:scale-95 transition-all text-left group"
+                    onClick={() => product.stockQuantity > 0 && addToCart(product)}
+                    disabled={product.stockQuantity <= 0}
+                    className={`flex flex-col bg-white rounded-xl p-2 md:p-3 shadow-sm border border-transparent transition-all text-left group relative ${
+                      product.stockQuantity <= 0 
+                      ? 'opacity-50 grayscale cursor-not-allowed' 
+                      : 'hover:border-blue-400 hover:shadow-md active:scale-95'
+                    }`}
                   >
+                    {product.stockQuantity <= 0 && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center p-2">
+                        <span className="bg-red-600 text-white text-[10px] font-black px-2 py-1 rounded uppercase tracking-tighter shadow-lg shadow-red-500/40">Out of Stock</span>
+                      </div>
+                    )}
                     <div className="w-full h-24 md:h-32 bg-slate-50 mb-2 rounded-lg flex items-center justify-center overflow-hidden border border-slate-100">
                       {product.image ? (
                         <img src={product.image} alt={product.name} className="w-full h-full object-cover" />

@@ -13,17 +13,41 @@ const usePOSStore = create((set, get) => ({
 
   addToCart: (product, quantity = 1) => set((state) => {
     if (!product) return state;
+    
+    // Check if product is out of stock entirely
+    if (product.stockQuantity <= 0) {
+      alert(`Product ${product.name} is out of stock.`);
+      return state;
+    }
+
     const existingItem = state.cart.find((item) => item.id === product.id);
     if (existingItem) {
+      const newQuantity = existingItem.quantity + quantity;
+      
+      // Prevent exceeding stock
+      if (newQuantity > product.stockQuantity) {
+        alert(`Maximum stock reached for ${product.name} (Available: ${product.stockQuantity})`);
+        return {
+          cart: state.cart.map((item) =>
+            item.id === product.id
+              ? { ...item, quantity: product.stockQuantity }
+              : item
+          ),
+        };
+      }
+
       return {
         cart: state.cart.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: newQuantity }
             : item
         ),
       };
     }
-    return { cart: [...state.cart, { ...product, quantity }] };
+    
+    // Initial add check
+    const clampedQuantity = Math.min(quantity, product.stockQuantity);
+    return { cart: [...state.cart, { ...product, quantity: clampedQuantity }] };
   }),
 
   removeFromCart: (productId) => set((state) => ({
@@ -31,9 +55,18 @@ const usePOSStore = create((set, get) => ({
   })),
 
   updateQuantity: (productId, quantity) => set((state) => ({
-    cart: state.cart.map((item) =>
-      item.id === productId ? { ...item, quantity: Math.max(1, quantity) } : item
-    ),
+    cart: state.cart.map((item) => {
+      if (item.id === productId) {
+        const newQty = Math.max(1, quantity);
+        // Prevent exceeding stock during manual update
+        if (newQty > item.stockQuantity) {
+          alert(`Only ${item.stockQuantity} units available in stock.`);
+          return { ...item, quantity: item.stockQuantity };
+        }
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }),
   })),
 
   clearCart: () => set({ cart: [], loyaltyDiscount: 0, appliedPoints: 0 }),
