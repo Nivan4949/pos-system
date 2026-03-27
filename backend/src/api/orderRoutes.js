@@ -127,15 +127,17 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
       return newOrder;
     });
 
-    // 8. Automated WhatsApp Messaging (Background)
+    // 8. Automated WhatsApp Messaging (Reliable on Vercel)
     if (order && order.customerId) {
-        prisma.customer.findUnique({ where: { id: order.customerId } })
-            .then(customer => {
-                if (customer && customer.phone) {
-                    whatsappUtil.sendReceipt(order, customer.phone);
-                }
-            })
-            .catch(err => console.error('WhatsApp Automation Query Error:', err));
+        try {
+            const customer = await prisma.customer.findUnique({ where: { id: order.customerId } });
+            if (customer && customer.phone) {
+                // We fire this and move on - axios is fast, but we ensure it starts before res.json
+                whatsappUtil.sendReceipt(order, customer.phone);
+            }
+        } catch (err) {
+            console.error('WhatsApp Automation Error:', err);
+        }
     }
 
     res.json(order);
