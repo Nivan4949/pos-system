@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../config/prisma');
 const auth = require('../middleware/auth');
+const whatsappUtil = require('../utils/whatsappUtil');
 
 // Create new order
 router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
@@ -125,6 +126,17 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
 
       return newOrder;
     });
+
+    // 8. Automated WhatsApp Messaging (Background)
+    if (order && order.customerId) {
+        prisma.customer.findUnique({ where: { id: order.customerId } })
+            .then(customer => {
+                if (customer && customer.phone) {
+                    whatsappUtil.sendReceipt(order, customer.phone);
+                }
+            })
+            .catch(err => console.error('WhatsApp Automation Query Error:', err));
+    }
 
     res.json(order);
   } catch (error) {
