@@ -315,7 +315,18 @@ const Reports = () => {
                           {t.type}
                         </span>
                       </td>
-                      <td className="p-4 text-slate-800">{t.details}</td>
+                      <td className="p-4 text-slate-800">
+                        {t.customerId ? (
+                          <button 
+                            onClick={() => setSelectedPartyId(t.customerId)}
+                            className="text-indigo-600 hover:text-indigo-800 font-black hover:underline text-left"
+                          >
+                            {t.details}
+                          </button>
+                        ) : (
+                          t.details
+                        )}
+                      </td>
                       <td className={`p-4 text-right font-black ${t.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {t.amount > 0 ? '+' : ''}₹{t.amount.toFixed(2)}
                       </td>
@@ -472,7 +483,18 @@ const Reports = () => {
                         {isItemProfit && <td className="p-4 text-center font-black text-indigo-600">{item.qtySold}</td>}
                         <td className="p-4 text-right font-bold text-green-600">₹{(item.totalSales || item.revenue)?.toFixed(2)}</td>
                         <td className="p-4 text-right text-red-500">₹{(item.cogs || item.cost)?.toFixed(2)}</td>
-                        <td className="p-4 text-right font-black text-emerald-600">₹{item.profit?.toFixed(2)}</td>
+                        <td className="p-4 text-right font-black text-emerald-600">
+                          {item.id ? (
+                            <button 
+                              onClick={() => setSelectedPartyId(item.id)}
+                              className="hover:underline text-left"
+                            >
+                              ₹{item.profit?.toFixed(2)}
+                            </button>
+                          ) : (
+                            `₹${item.profit?.toFixed(2)}`
+                          )}
+                        </td>
                       </>
                     )}
                   </tr>

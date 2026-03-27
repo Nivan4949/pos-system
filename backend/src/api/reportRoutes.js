@@ -177,7 +177,7 @@ router.get('/daybook', async (req, res) => {
     const expenses = await prisma.expense.findMany({ where: { createdAt: dateRange } });
     
     const transactions = [
-      ...sales.map(s => ({ type: 'SALE', amount: s.grandTotal, date: s.createdAt, details: `Bill: ${s.invoiceNo}` })),
+      ...sales.map(s => ({ type: 'SALE', amount: s.grandTotal, date: s.createdAt, details: `Bill: ${s.invoiceNo}`, customerId: s.customerId })),
       ...purchases.map(p => ({ type: 'PURCHASE', amount: -p.grandTotal, date: p.createdAt, details: `Inv: ${p.invoiceNo}` })),
       ...expenses.map(e => ({ type: 'EXPENSE', amount: -e.amount, date: e.createdAt, details: e.type }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -238,26 +238,25 @@ router.get('/party-statement/:id', async (req, res) => {
 // 10. Party Wise Profit & Loss
 router.get('/party-profit', async (req, res) => {
   try {
-    // Advanced: grouping profit by customer
     const orders = await prisma.order.findMany({
       include: { customer: true, orderItems: { include: { product: true } } }
     });
     
     const profitByParty = orders.reduce((acc, order) => {
       if (!order.customer) return acc;
-      const cname = order.customer.name;
-      if (!acc[cname]) acc[cname] = { totalSales: 0, cogs: 0, profit: 0, points: order.customer.loyaltyPoints };
+      const cid = order.customer.id;
+      if (!acc[cid]) acc[cid] = { id: cid, name: order.customer.name, totalSales: 0, cogs: 0, profit: 0, points: order.customer.loyaltyPoints };
       
       const sales = order.subtotal;
       const cogs = order.orderItems.reduce((sum, item) => sum + ((item.product?.purchasePrice || 0) * item.quantity), 0);
       
-      acc[cname].totalSales += sales;
-      acc[cname].cogs += cogs;
-      acc[cname].profit += (sales - cogs);
+      acc[cid].totalSales += sales;
+      acc[cid].cogs += cogs;
+      acc[cid].profit += (sales - cogs);
       return acc;
     }, {});
     
-    res.json(Object.entries(profitByParty).map(([name, data]) => ({ name, ...data })));
+    res.json(Object.values(profitByParty));
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
