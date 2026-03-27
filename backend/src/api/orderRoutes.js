@@ -49,14 +49,17 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
           loyaltyPointsRedeemed,
           status: 'COMPLETED',
           orderItems: {
-            create: orderItems.map((item) => ({
-              productId: item.id,
-              quantity: item.quantity,
-              price: item.sellingPrice,
-              discount: item.discount || 0,
-              taxAmount: (item.sellingPrice * ((item.gstRate || 18) / 100)) * item.quantity,
-              total: (item.sellingPrice * item.quantity) + ((item.sellingPrice * ((item.gstRate || 18) / 100)) * item.quantity)
-            }))
+            create: orderItems.map((item) => {
+              const gst = parseFloat(item.gstRate ?? item.product?.gstRate ?? 18);
+              return {
+                productId: item.id,
+                quantity: item.quantity,
+                price: item.sellingPrice,
+                discount: item.discount || 0,
+                taxAmount: (item.sellingPrice * (gst / 100)) * item.quantity,
+                total: (item.sellingPrice * item.quantity) + ((item.sellingPrice * (gst / 100)) * item.quantity)
+              };
+            })
           },
           payments: {
             create: {
@@ -67,7 +70,11 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
           }
         },
         include: {
-          orderItems: true,
+          orderItems: {
+            include: {
+              product: true
+            }
+          },
           payments: true
         }
       });

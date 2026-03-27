@@ -195,7 +195,8 @@ const POSInterface: React.FC = () => {
       orderItems: cart.map((item: any) => ({
         ...item,
         price: item.sellingPrice,
-        total: item.sellingPrice * item.quantity
+        gstRate: item.gstRate ?? 18,
+        total: (item.sellingPrice * item.quantity) + ((item.sellingPrice * ((item.gstRate ?? 18) / 100)) * item.quantity)
       })),
       subtotal,
       taxTotal,

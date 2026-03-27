@@ -13,16 +13,19 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
       const printWindow = window.open('', '_blank');
       if (!printWindow) return;
 
-      const itemsHtml = order.orderItems?.map((item: any) => `
+      const itemsHtml = order.orderItems?.map((item: any) => {
+        const itemName = item.product?.name || item.name || 'Product';
+        return `
         <tr>
           <td style="padding: 5px 0;">
-            <div style="font-weight: bold;">${item.product?.name || item.name || 'Product'}</div>
+            <div style="font-weight: bold;">${itemName}</div>
             <div style="font-size: 10px; color: #666;">₹${(item.price || 0).toFixed(2)} + GST</div>
           </td>
           <td style="padding: 5px 0; text-align: center;">${item.quantity}</td>
           <td style="padding: 5px 0; text-align: right; font-weight: bold;">₹${(item.total || (item.price * item.quantity) || 0).toFixed(2)}</td>
         </tr>
-      `).join('') || '';
+      `;
+      }).join('') || '';
 
       printWindow.document.write(`
         <html>
