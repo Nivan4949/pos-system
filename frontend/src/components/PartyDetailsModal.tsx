@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Phone, Mail, Award, CreditCard, ShoppingBag, Calendar, ArrowUpRight, Loader2, Edit3, Save } from 'lucide-react';
+import { X, Phone, Mail, Award, CreditCard, ShoppingBag, Calendar, ArrowUpRight, Loader2, Edit3, Save, Receipt } from 'lucide-react';
 import api from '../api/api';
+import BillDetailsModal from './BillDetailsModal';
 
 interface PartyDetailsModalProps {
   partyId: string;
@@ -14,6 +15,7 @@ const PartyDetailsModal: React.FC<PartyDetailsModalProps> = ({ partyId, onClose,
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
   const [saving, setSaving] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<{id: string, type: 'SALE' | 'PURCHASE'} | null>(null);
 
   const fetchCustomerDetails = async () => {
     setLoading(true);
@@ -179,27 +181,35 @@ const PartyDetailsModal: React.FC<PartyDetailsModalProps> = ({ partyId, onClose,
              <div className="space-y-4">
                 {customer.orders?.map((order: any, idx: number) => (
                   <div key={order.id} className="flex items-center justify-between p-6 bg-white border border-slate-100 rounded-[2rem] hover:border-indigo-500/30 transition-all group">
-                    <div className="flex items-center gap-6">
-                      <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center font-black text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                        {idx + 1}
+                      <div className="flex items-center gap-6">
+                        <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center font-black text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                          <Receipt size={16} />
+                        </div>
+                        <div>
+                          <button 
+                            onClick={() => setSelectedBill({ id: order.id, type: 'SALE' })}
+                            className="font-black text-slate-800 text-base mb-0.5 hover:text-indigo-600 hover:underline text-left block"
+                          >
+                            {order.invoiceNo}
+                          </button>
+                          <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 uppercase">
+                            <Calendar size={10}/> {new Date(order.createdAt).toLocaleDateString()} | <span className="text-indigo-400">{order.paymentMode}</span>
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-black text-slate-800 text-base mb-0.5">{order.invoiceNo}</p>
-                        <p className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 uppercase">
-                          <Calendar size={10}/> {new Date(order.createdAt).toLocaleDateString()} | <span className="text-indigo-400">{order.paymentMode}</span>
-                        </p>
+                      
+                      <div className="flex items-center gap-8">
+                         <div className="text-right">
+                            <p className="text-xl font-black text-slate-900">₹{order.grandTotal.toFixed(0)}</p>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md">Success</span>
+                         </div>
+                         <button 
+                          onClick={() => setSelectedBill({ id: order.id, type: 'SALE' })}
+                          className="p-3 bg-slate-50 text-slate-300 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all"
+                         >
+                            <ArrowUpRight size={18} />
+                         </button>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-8">
-                       <div className="text-right">
-                          <p className="text-xl font-black text-slate-900">₹{order.grandTotal.toFixed(0)}</p>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md">Success</span>
-                       </div>
-                       <div className="p-3 bg-slate-50 text-slate-300 rounded-xl">
-                          <ArrowUpRight size={18} />
-                       </div>
-                    </div>
                   </div>
                 ))}
                 {(!customer.orders || customer.orders.length === 0) && (
@@ -212,9 +222,21 @@ const PartyDetailsModal: React.FC<PartyDetailsModalProps> = ({ partyId, onClose,
           </div>
         </div>
 
+          </div>
+        </div>
+
         <div className="p-10 bg-slate-900 text-white/30 text-[10px] font-black uppercase tracking-[0.5em] text-center">
             FreshNaad Global CRM identity layer 4.0 // Secured Ledger
         </div>
+
+        {selectedBill && (
+          <BillDetailsModal 
+            billId={selectedBill.id}
+            type={selectedBill.type}
+            onClose={() => setSelectedBill(null)}
+            onUpdate={fetchCustomerDetails}
+          />
+        )}
       </div>
     </div>
   );
