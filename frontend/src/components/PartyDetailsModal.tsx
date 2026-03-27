@@ -222,9 +222,6 @@ const PartyDetailsModal: React.FC<PartyDetailsModalProps> = ({ partyId, onClose,
           </div>
         </div>
 
-          </div>
-        </div>
-
         <div className="p-10 bg-slate-900 text-white/30 text-[10px] font-black uppercase tracking-[0.5em] text-center">
             FreshNaad Global CRM identity layer 4.0 // Secured Ledger
         </div>
