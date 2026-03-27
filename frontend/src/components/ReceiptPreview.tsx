@@ -1,6 +1,6 @@
-import React from 'react';
 import { X, Printer, Share2 } from 'lucide-react';
 import WhatsAppShareModal from './WhatsAppShareModal';
+import api from '../api/api';
 
 interface ReceiptPreviewProps {
   order: any;
@@ -115,25 +115,35 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
       printWindow.document.close();
     };
 
-    const handleWhatsAppProceed = (phone: string) => {
-      const items = order.orderItems?.map((item: any) => {
-        const name = item.product?.name || item.name || 'Product';
-        return `• ${name} x ${item.quantity} = ₹${(item.total || (item.price * item.quantity)).toFixed(2)}`;
-      }).join('\n') || '';
+    const handleWhatsAppProceed = async (phone: string) => {
+      try {
+        // Use the backend to send the message in the background
+        await api.post(`/orders/share-whatsapp`, {
+          orderId: order.id,
+          phone: phone
+        });
+        alert('WhatsApp message sent successfully in background.');
+      } catch (error) {
+        console.error('Failed to send WhatsApp message through backend:', error);
+        // Fallback for local testing if API isn't configured
+        const items = order.orderItems?.map((item: any) => {
+          const name = item.product?.name || item.name || 'Product';
+          return `• ${name} x ${item.quantity} = ₹${(item.total || (item.price * item.quantity)).toFixed(2)}`;
+        }).join('\n') || '';
 
-      const message = `*TAX INVOICE FROM MODERN POS RETAIL*\n\n` +
-                      `Invoice: *${order.invoiceNo}*\n` +
-                      `Date: ${new Date().toLocaleDateString()}\n` +
-                      `Customer: ${order.customer?.name || order.customerName || 'Walk-in'}\n\n` +
-                      `*ITEMS:*\n${items}\n\n` +
-                      `Subtotal: ₹${(order.subtotal || 0).toFixed(2)}\n` +
-                      `Tax (GST): ₹${(order.taxTotal || 0).toFixed(2)}\n` +
-                      `*Grand Total: ₹${(order.grandTotal || 0).toFixed(2)}*\n\n` +
-                      `Thank you for shopping with us! 🙏\n` +
-                      `_Digital Receipt via POS Pro_`;
+        const message = `*TAX INVOICE FROM MODERN POS RETAIL*\n\n` +
+                        `Invoice: *${order.invoiceNo}*\n` +
+                        `Date: ${new Date().toLocaleDateString()}\n` +
+                        `Customer: ${order.customer?.name || order.customerName || 'Walk-in'}\n\n` +
+                        `*ITEMS:*\n${items}\n\n` +
+                        `Subtotal: ₹${(order.subtotal || 0).toFixed(2)}\n` +
+                        `Tax (GST): ₹${(order.taxTotal || 0).toFixed(2)}\n` +
+                        `*Grand Total: ₹${(order.grandTotal || 0).toFixed(2)}*\n\n` +
+                        `_Digital Receipt via POS Pro_`;
 
-      const encodedMessage = encodeURIComponent(message);
-      window.open(`https://wa.me/91${phone}?text=${encodedMessage}`, '_blank');
+        const encodedMessage = encodeURIComponent(message);
+        window.open(`https://wa.me/91${phone}?text=${encodedMessage}`, '_blank');
+      }
       setShowWhatsAppModal(false);
     };
 
