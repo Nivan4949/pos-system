@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/api';
 import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, Calendar, FileText, IndianRupee, PieChart, Package, Receipt, X } from 'lucide-react';
+import PartyDetailsModal from '../../components/PartyDetailsModal';
 
 const reportCategories = [
   {
@@ -51,6 +52,7 @@ const Reports = () => {
   const [selectedEntityId, setSelectedEntityId] = useState(''); // For specific party/item queries
   const [entities, setEntities] = useState<any[]>([]); // To populate dropdowns for statement/details
   const [selectedReturn, setSelectedReturn] = useState<any>(null); // For Credit Note Detailed View
+  const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null);
 
   // Initial load for specific entities
   useEffect(() => {
@@ -142,7 +144,22 @@ const Reports = () => {
                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4">{new Date(item.createdAt).toLocaleDateString()}</td>
                       <td className="p-4 text-indigo-600 font-bold">{item.invoiceNo}</td>
-                      <td className="p-4">{activeReport === 'sales' ? item.customer?.name || 'Walk-in' : item.supplierName}</td>
+                      <td className="p-4">
+                        {activeReport === 'sales' ? (
+                          item.customerId ? (
+                            <button 
+                              onClick={() => setSelectedPartyId(item.customerId)}
+                              className="text-indigo-600 hover:text-indigo-800 font-black hover:underline text-left"
+                            >
+                              {item.customer?.name || 'Walk-in'}
+                            </button>
+                          ) : (
+                            'Walk-in'
+                          )
+                        ) : (
+                          item.supplierName
+                        )}
+                      </td>
                       <td className="p-4 text-right font-bold text-slate-900">₹{item.grandTotal.toFixed(2)}</td>
                     </tr>
                   ))}
@@ -192,7 +209,22 @@ const Reports = () => {
                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4">{new Date(item.createdAt).toLocaleDateString()}</td>
                       <td className="p-4 text-indigo-600 font-bold">{item.returnNo}</td>
-                      <td className="p-4">{isCreditNote ? (item.customer?.name || 'Walk-in') : (item.supplierName || 'N/A')}</td>
+                      <td className="p-4">
+                        {isCreditNote ? (
+                          item.customerId ? (
+                            <button 
+                              onClick={() => setSelectedPartyId(item.customerId)}
+                              className="text-indigo-600 hover:text-indigo-800 font-black hover:underline text-left"
+                            >
+                              {item.customer?.name || 'Walk-in'}
+                            </button>
+                          ) : (
+                            'Walk-in'
+                          )
+                        ) : (
+                          item.supplierName || 'N/A'
+                        )}
+                      </td>
                       <td className="p-4 text-right font-black text-slate-900">₹{item.totalAmount.toFixed(2)}</td>
                       <td className="p-4 text-center">
                         <button 
@@ -416,7 +448,18 @@ const Reports = () => {
               <tbody className="divide-y text-slate-700 font-medium">
                 {reportData.map((item: any, i: number) => (
                   <tr key={i} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-4 font-bold text-slate-900 border-r border-slate-50">{item.name}</td>
+                    <td className="p-4 font-bold text-slate-900 border-r border-slate-50">
+                      {isParty ? (
+                        <button 
+                          onClick={() => setSelectedPartyId(item.id)}
+                          className="text-indigo-600 hover:text-indigo-800 font-black hover:underline text-left"
+                        >
+                          {item.name}
+                        </button>
+                      ) : (
+                        item.name
+                      )}
+                    </td>
                     {isParty ? (
                       <>
                         <td className="p-4 text-center">{item.phone || '-'}</td>
@@ -463,7 +506,12 @@ const Reports = () => {
           <div>
              <div className="bg-indigo-50 p-6 rounded-2xl mb-6 flex justify-between items-center border border-indigo-100">
                <div>
-                 <h2 className="text-2xl font-black text-indigo-900">{reportData.name}</h2>
+                 <button 
+                    onClick={() => setSelectedPartyId(selectedEntityId)}
+                    className="text-2xl font-black text-indigo-900 hover:text-indigo-600 hover:underline text-left block"
+                  >
+                    {reportData.name}
+                  </button>
                  <p className="text-sm font-bold text-indigo-500">{reportData.phone}</p>
                </div>
                <div className="text-right">
