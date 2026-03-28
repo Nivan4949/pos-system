@@ -350,4 +350,59 @@ router.get('/stock-detail/:id', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// Test WhatsApp Configuration
+router.post('/test-whatsapp', auth(['ADMIN']), async (req, res) => {
+  try {
+    const { phone, message } = req.body;
+    if (!phone) return res.status(400).json({ error: 'Phone number required' });
+
+    // Mock order object for testing
+    const mockOrder = {
+      invoiceNo: 'TEST-CONNECTION',
+      createdAt: new Date(),
+      subtotal: 0,
+      taxTotal: 0,
+      grandTotal: 0,
+      orderItems: []
+    };
+
+    const apiURL = whatsappUtil.getFormattedURL(process.env.WHATSAPP_API_URL);
+    const apiKey = process.env.WHATSAPP_API_KEY;
+
+    if (!apiURL || !apiKey) {
+      return res.status(400).json({ 
+        error: 'Missing environment variables',
+        details: { url: !!apiURL, key: !!apiKey }
+      });
+    }
+
+    // Attempt to send
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    const formattedPhone = `91${cleanPhone}`;
+    
+    const params = new URLSearchParams();
+    params.append('token', apiKey);
+    params.append('to', formattedPhone);
+    params.append('body', message || 'POS Pro WhatsApp Connection Test: SUCCESS');
+
+    const axios = require('axios');
+    const response = await axios.post(apiURL, params, { 
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      timeout: 10000 
+    });
+
+    res.json({ 
+        success: true, 
+        message: 'Test message triggered', 
+        providerResponse: response.data 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+        success: false, 
+        error: error.message, 
+        details: error.response?.data 
+    });
+  }
+});
+
 module.exports = router;

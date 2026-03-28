@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../config/prisma');
 const auth = require('../middleware/auth');
+const whatsappUtil = require('../utils/whatsappUtil');
 
 // Create new sales return (Credit Note)
 router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
@@ -82,6 +83,18 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
 
       return newReturn;
     });
+
+    // 4. Automated WhatsApp Messaging (Credit Note)
+    if (salesReturn && salesReturn.customerId) {
+        try {
+            const customer = await prisma.customer.findUnique({ where: { id: salesReturn.customerId } });
+            if (customer && customer.phone) {
+                await whatsappUtil.sendReturnReceipt(salesReturn, customer.phone);
+            }
+        } catch (err) {
+            console.error('WhatsApp Automation (Return) Error:', err);
+        }
+    }
 
     res.json(salesReturn);
   } catch (error) {

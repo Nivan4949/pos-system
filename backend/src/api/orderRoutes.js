@@ -132,8 +132,8 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
         try {
             const customer = await prisma.customer.findUnique({ where: { id: order.customerId } });
             if (customer && customer.phone) {
-                // We fire this and move on - axios is fast, but we ensure it starts before res.json
-                whatsappUtil.sendReceipt(order, customer.phone);
+                // We MUST await this on Vercel to prevent process termination before the HTTP request completes
+                await whatsappUtil.sendReceipt(order, customer.phone);
             }
         } catch (err) {
             console.error('WhatsApp Automation Error:', err);
