@@ -1,7 +1,9 @@
 import React from 'react';
-import { X, Printer, Share2 } from 'lucide-react';
 import WhatsAppShareModal from './WhatsAppShareModal';
 import api from '../api/api';
+import { Bluetooth, Printer, Share2, X } from 'lucide-react';
+import { useBluetoothPrinter } from '../hooks/useBluetoothPrinter';
+import { EscPosBuilder } from '../utils/escPosUtil';
 
 interface ReceiptPreviewProps {
   order: any;
@@ -12,6 +14,7 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
   const [showWhatsAppModal, setShowWhatsAppModal] = React.useState(false);
   const [waStatus, setWaStatus] = React.useState<any>(order?.whatsappStatus || null);
   const [isSending, setIsSending] = React.useState(false);
+  const { print, isConnected } = useBluetoothPrinter();
 
   if (!order) return null;
 
@@ -139,6 +142,22 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
       } finally {
         setIsSending(false);
         setShowWhatsAppModal(false);
+      }
+    };
+
+    const handleBluetoothPrint = async () => {
+      try {
+        const businessInfo = {
+          name: 'MODERN POS RETAIL',
+          address: '123, Business Hub, MG Road, Bangalore',
+          phone: '9876543210'
+        };
+        const bytes = EscPosBuilder.generateReceipt(order, businessInfo);
+        await print(bytes);
+        alert('Sent to Bluetooth Printer!');
+      } catch (error: any) {
+        console.error('Bluetooth Print Error:', error);
+        alert('Bluetooth Print Failed: ' + error.message + '\n\nPlease ensure your printer is connected in Settings.');
       }
     };
 
@@ -280,11 +299,20 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
             </button>
             <button 
               onClick={handlePrint}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20"
+              className="flex-1 bg-white border-2 border-slate-200 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all"
             >
               <Printer size={18} />
-              <span>Print Bill</span>
+              <span>System Print</span>
             </button>
+            {isConnected && (
+              <button 
+                onClick={handleBluetoothPrint}
+                className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+              >
+                <Bluetooth size={18} />
+                <span>BT Print</span>
+              </button>
+            )}
           </div>
         </div>
 

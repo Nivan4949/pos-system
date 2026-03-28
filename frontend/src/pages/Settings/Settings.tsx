@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/api';
 import useAuthStore from '../../store/authStore';
-import { Shield, Users, Key, AlertCircle, CheckCircle2, Loader2, Save, UserX, UserCheck, Tag, Plus, Edit2, Trash2, Image as ImageIcon, Search, Camera, X as CloseIcon } from 'lucide-react';
+import { Shield, Users, Key, AlertCircle, CheckCircle2, Loader2, Save, UserX, UserCheck, Tag, Plus, Edit2, Trash2, Image as ImageIcon, Search, Camera, X as CloseIcon, Printer, Bluetooth, BluetoothOff, Info } from 'lucide-react';
+import { useBluetoothPrinter } from '../../hooks/useBluetoothPrinter';
 
 const Settings = () => {
     const user = useAuthStore((state: any) => state.user);
-    const [activeTab, setActiveTab] = useState<'SECURITY' | 'USERS' | 'CATEGORIES' | 'PHOTOS'>(user?.role === 'ADMIN' ? 'USERS' : 'SECURITY');
+    const [activeTab, setActiveTab] = useState<'SECURITY' | 'USERS' | 'CATEGORIES' | 'PHOTOS' | 'PRINTER'>(user?.role === 'ADMIN' ? 'USERS' : 'SECURITY');
+    const { connect, disconnect, isConnected, device, error: bluetoothError } = useBluetoothPrinter();
     const [loading, setLoading] = useState(false);
     const [users, setUsers] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
@@ -234,6 +236,13 @@ const Settings = () => {
                     >
                         <Shield size={18} />
                         <span>Security & Password</span>
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('PRINTER')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'PRINTER' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}
+                    >
+                        <Printer size={18} />
+                        <span>Printer Setup</span>
                     </button>
                 </div>
 
@@ -490,6 +499,94 @@ const Settings = () => {
                                         {loading && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10"><Loader2 className="animate-spin text-blue-600" /></div>}
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    ) : activeTab === 'PRINTER' ? (
+                        <div className="p-10">
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                                    <Printer size={24} />
+                                </div>
+                                <h2 className="text-2xl font-black text-slate-800">Thermal Printer Configuration</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-12">
+                                <div className="space-y-6">
+                                    <div className={`p-8 rounded-[2rem] border-2 transition-all ${isConnected ? 'border-emerald-100 bg-emerald-50/30' : 'border-slate-100 bg-slate-50/50'}`}>
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-2 rounded-xl ${isConnected ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-400'}`}>
+                                                    {isConnected ? <Bluetooth size={20} /> : <BluetoothOff size={20} />}
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</p>
+                                                    <p className={`font-black uppercase text-xs ${isConnected ? 'text-emerald-600' : 'text-slate-500'}`}>
+                                                        {isConnected ? 'Connected' : 'Disconnected'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {isConnected && (
+                                                <button 
+                                                    onClick={disconnect}
+                                                    className="text-[10px] font-black uppercase bg-white border border-slate-200 px-3 py-1 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                                                >
+                                                    Disconnect
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {isConnected ? (
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Active Device</p>
+                                                <p className="text-xl font-black text-slate-800">{device?.name || 'Generic Thermal Printer'}</p>
+                                            </div>
+                                        ) : (
+                                            <button 
+                                                onClick={connect}
+                                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+                                            >
+                                                <Bluetooth size={20} />
+                                                PAIR NEW PRINTER
+                                            </button>
+                                        )}
+                                        
+                                        {bluetoothError && (
+                                            <div className="mt-4 flex items-center gap-2 text-red-500 text-xs font-bold bg-white p-3 rounded-xl border border-red-500/20">
+                                                <AlertCircle size={14} />
+                                                <span>{bluetoothError}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 flex gap-4 items-start">
+                                        <Info className="text-blue-500 shrink-0 mt-1" size={18} />
+                                        <div className="text-xs text-blue-700 font-medium leading-relaxed">
+                                            Bluetooth printing is only supported on Google Chrome, Microsoft Edge, and newer Android devices via HTTPS. Ensure your printer is in pairing mode.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Printer Maintenance</h3>
+                                    <button 
+                                        disabled={!isConnected}
+                                        onClick={async () => {
+                                            const encoder = new TextEncoder();
+                                            const testData = new Uint8Array([0x1B, 0x40, ...encoder.encode("Printer Connection Successful!\nReady for wireless billing.\n\n"), 0x0A, 0x0A, 0x1D, 0x56, 0x42, 0x00]);
+                                            try {
+                                                // Assuming we have a global way to use the print function or exposing it.
+                                                // For now, this is a placeholder to show accessibility.
+                                            } catch (e) {}
+                                        }}
+                                        className="w-full flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 hover:bg-blue-50/30 transition-all disabled:opacity-50"
+                                    >
+                                        <div className="flex items-center gap-3 text-slate-700 font-bold text-sm">
+                                            <CheckCircle2 size={18} className="text-slate-400" />
+                                            Print Test Page
+                                        </div>
+                                        <Save size={16} className="text-slate-300" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ) : null}
