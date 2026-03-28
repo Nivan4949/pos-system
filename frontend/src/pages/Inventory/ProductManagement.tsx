@@ -55,8 +55,9 @@ const ProductManagement = () => {
   };
 
   const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
-    p.barcode?.includes(search)
+    (p.is_active !== false) && 
+    (p.name.toLowerCase().includes(search.toLowerCase()) || 
+     p.barcode?.includes(search))
   );
 
   return (
