@@ -10,6 +10,8 @@ interface ReceiptPreviewProps {
 
 const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
   const [showWhatsAppModal, setShowWhatsAppModal] = React.useState(false);
+  const [waStatus, setWaStatus] = React.useState<any>(order?.whatsappStatus || null);
+  const [isSending, setIsSending] = React.useState(false);
 
   if (!order) return null;
 
@@ -116,8 +118,6 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
       printWindow.document.close();
     };
 
-    const [waStatus, setWaStatus] = React.useState<any>(order.whatsappStatus || null);
-    const [isSending, setIsSending] = React.useState(false);
 
     const handleWhatsAppProceed = async (phone: string) => {
       setIsSending(true);
