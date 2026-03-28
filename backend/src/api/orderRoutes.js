@@ -10,11 +10,9 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
   try {
     const { customerId, orderItems, subtotal, discount, taxTotal, grandTotal, paymentMode, loyaltyPointsRedeemed = 0 } = req.body;
 
-    // Generate Robust Invoice Number (e.g., ST01-1710500000-A1B2)
-    const terminalId = req.headers['x-terminal-id'] || 'T1';
-    const timestamp = Date.now().toString().slice(-10);
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const invoiceNo = `INV-${terminalId}-${timestamp}-${random}`;
+    // Generate Simple Sequential Invoice Number
+    const orderCount = await prisma.order.count();
+    const invoiceNo = `INV-${1001 + orderCount}`;
 
     const order = await prisma.$transaction(async (tx) => {
       // 1. Calculate points earned (1 point per ₹100 of grandTotal)

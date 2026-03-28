@@ -22,9 +22,9 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { supplierName, purchaseItems, subtotal, taxTotal, grandTotal, paymentMode, date } = req.body;
 
-    // Generate Purchase Invoice Number
-    const timestamp = Date.now().toString().slice(-10);
-    const invoiceNo = `PUR-${timestamp}`;
+    // Generate Simple Sequential Purchase Invoice Number
+    const purchaseCount = await prisma.purchase.count();
+    const invoiceNo = `PUR-${1001 + purchaseCount}`;
 
     const purchase = await prisma.$transaction(async (tx) => {
       // 1. Create the purchase record
