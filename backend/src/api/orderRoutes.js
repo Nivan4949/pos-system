@@ -3,6 +3,7 @@ const router = express.Router();
 const prisma = require('../config/prisma');
 const auth = require('../middleware/auth');
 const whatsappUtil = require('../utils/whatsappUtil');
+const pdfUtil = require('../utils/pdfUtil');
 
 // Create new order
 router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
@@ -187,6 +188,30 @@ router.get('/:id', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// GET order as PDF (Public for WhatsApp API)
+router.get('/:id/pdf', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { 
+        orderItems: { include: { product: true } }, 
+        customer: true 
+      }
+    });
+    
+    if (!order) return res.status(404).send('Invoice not found');
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Invoice-${order.invoiceNo}.pdf`);
+    
+    pdfUtil.generateInvoicePDF(order, res);
+  } catch (error) {
+    console.error('PDF Error:', error);
+    res.status(500).send('Error generating PDF');
   }
 });
 

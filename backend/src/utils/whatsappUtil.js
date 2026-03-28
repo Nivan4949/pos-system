@@ -19,105 +19,89 @@ const whatsappUtil = {
   },
 
   /**
-   * Send a formatted receipt to a customer
+   * Send a formatted PDF receipt to a customer
    * @param {Object} order - The created order object (with orderItems and product details)
    * @param {string} phone - The customer's 10-digit phone number
    */
   sendReceipt: async (order, phone) => {
-    const apiURL = whatsappUtil.getFormattedURL(process.env.WHATSAPP_API_URL);
+    const baseURL = process.env.WHATSAPP_API_URL; // Base UltraMsg URL (e.g., https://api.ultramsg.com/instanceXXX)
     const apiKey = process.env.WHATSAPP_API_KEY;
+    const appURL = process.env.APP_URL; // Your public Vercel URL
 
-    if (!apiURL || !apiKey || !phone) {
-      console.log('WhatsApp automation skipped: Missing API config or phone number.');
-      return;
+    if (!baseURL || !apiKey || !phone || !appURL) {
+      console.log('WhatsApp PDF automation skipped: Missing config (API URL/Key/App URL) or phone.');
+      return { success: false, error: 'Incomplete Configuration' };
     }
 
     // Format phone: strip non-digits, take last 10, prefix 91
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
     const formattedPhone = `91${cleanPhone}`;
 
-    // Message logic
-    const itemsText = order.orderItems?.map(item => {
-      const name = item.product?.name || item.name || 'Product';
-      return `• ${name} x ${item.quantity} = ₹${(item.total || 0).toFixed(2)}`;
-    }).join('\n') || '';
-
-    const message = `*TAX INVOICE FROM MODERN POS RETAIL*\n\n` +
-                    `Invoice: *${order.invoiceNo}*\n` +
-                    `Date: ${new Date(order.createdAt || Date.now()).toLocaleDateString()}\n\n` +
-                    `*ITEMS:*\n${itemsText}\n\n` +
-                    `Subtotal: ₹${(order.subtotal || 0).toFixed(2)}\n` +
-                    `Tax (GST): ₹${(order.taxTotal || 0).toFixed(2)}\n` +
-                    `*Grand Total: ₹${(order.grandTotal || 0).toFixed(2)}*\n\n` +
-                    `Thank you for shopping with us! 🙏\n` +
-                    `_Digital Receipt via POS Pro_`;
+    // PDF URL pointing to our public endpoint
+    const pdfUrl = `${appURL.replace(/\/$/, '')}/api/orders/${order.id}/pdf`;
+    const docEndpoint = baseURL.includes('ultramsg.com') 
+        ? (baseURL.endsWith('/') ? `${baseURL}messages/document` : `${baseURL}/messages/document`)
+        : baseURL;
 
     try {
-      console.log(`[WhatsApp] Triggering automated message to ${formattedPhone} (Invoice: ${order.invoiceNo})`);
+      console.log(`[WhatsApp] Triggering PDF Delivery to ${formattedPhone} (Invoice: ${order.invoiceNo})`);
       
       const params = new URLSearchParams();
       params.append('token', apiKey);
       params.append('to', formattedPhone);
-      params.append('body', message);
+      params.append('document', pdfUrl);
+      params.append('filename', `Invoice-${order.invoiceNo}.pdf`);
+      params.append('caption', `*TAX INVOICE: ${order.invoiceNo}*\nThank you for shopping with us! 🙏`);
 
-      const response = await axios.post(apiURL, params, { 
+      const response = await axios.post(docEndpoint, params, { 
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout: 10000 
+        timeout: 15000 // Generating PDF + Sending might take longer
       });
 
-      console.log(`[WhatsApp] API Response for ${formattedPhone}:`, JSON.stringify(response.data));
-      return { success: true, message: 'Sent automatically' };
+      console.log(`[WhatsApp] Document API Response:`, JSON.stringify(response.data));
+      return { success: true, message: 'PDF Sent Successfully' };
     } catch (error) {
       const errorData = error.response?.data ? JSON.stringify(error.response.data) : error.message;
-      console.error(`[WhatsApp] API Failure for ${formattedPhone}:`, errorData);
-      return { success: false, error: typeof errorData === 'string' ? errorData : 'API Error' };
+      console.error(`[WhatsApp] PDF Delivery Failure:`, errorData);
+      return { success: false, error: 'Document API Error' };
     }
   },
 
   /**
-   * Send a formatted credit note to a customer
-   * @param {Object} salesReturn - The created sales return object
-   * @param {string} phone - The customer's 10-digit phone number
+   * Send a formatted PDF credit note to a customer
    */
   sendReturnReceipt: async (salesReturn, phone) => {
-    const apiURL = whatsappUtil.getFormattedURL(process.env.WHATSAPP_API_URL);
+    const baseURL = process.env.WHATSAPP_API_URL;
     const apiKey = process.env.WHATSAPP_API_KEY;
+    const appURL = process.env.APP_URL;
 
-    if (!apiURL || !apiKey || !phone) return;
+    if (!baseURL || !apiKey || !phone || !appURL) return { success: false };
 
     const cleanPhone = phone.replace(/\D/g, '').slice(-10);
     const formattedPhone = `91${cleanPhone}`;
-
-    const itemsText = salesReturn.returnItems?.map(item => {
-      const name = item.product?.name || 'Product';
-      return `• ${name} x ${item.quantity} = ₹${(item.total || 0).toFixed(2)}`;
-    }).join('\n') || '';
-
-    const message = `*CREDIT NOTE / SALES RETURN*\n\n` +
-                    `Return No: *${salesReturn.returnNo}*\n` +
-                    `Status: *REFUNDED TO CREDIT BALANCE*\n` +
-                    `Date: ${new Date(salesReturn.createdAt || Date.now()).toLocaleDateString()}\n\n` +
-                    `*RETURNED ITEMS:*\n${itemsText}\n\n` +
-                    `*Total Refund: ₹${(salesReturn.totalAmount || 0).toFixed(2)}*\n\n` +
-                    `_Amount added to your digital wallet._\n` +
-                    `POS Pro Services`;
+    const pdfUrl = `${appURL.replace(/\/$/, '')}/api/sales-returns/${salesReturn.id}/pdf`;
+    
+    const docEndpoint = baseURL.includes('ultramsg.com') 
+        ? (baseURL.endsWith('/') ? `${baseURL}messages/document` : `${baseURL}/messages/document`)
+        : baseURL;
 
     try {
-      console.log(`[WhatsApp] Triggering automated Credit Note to ${formattedPhone} (ID: ${salesReturn.returnNo})`);
-      
       const params = new URLSearchParams();
       params.append('token', apiKey);
       params.append('to', formattedPhone);
-      params.append('body', message);
+      params.append('document', pdfUrl);
+      params.append('filename', `CreditNote-${salesReturn.returnNo}.pdf`);
+      params.append('caption', `*CREDIT NOTE: ${salesReturn.returnNo}*\nAmount added to your digital wallet.`);
 
-      const response = await axios.post(apiURL, params, { 
+      const response = await axios.post(docEndpoint, params, { 
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout: 10000 
+        timeout: 15000 
       });
 
-      console.log(`[WhatsApp] API Response (Return) for ${formattedPhone}:`, JSON.stringify(response.data));
+      return { success: true, message: 'Return PDF Sent' };
     } catch (error) {
-       console.error(`[WhatsApp] API Failure (Return) for ${formattedPhone}:`, error.message);
+       console.error(`[WhatsApp] Return PDF Failure:`, error.message);
+       return { success: false };
     }
   }
 };
