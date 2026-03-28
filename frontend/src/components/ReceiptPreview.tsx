@@ -102,7 +102,8 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
 
             <div style="margin-top: 30px; text-align: center; font-size: 10px; font-style: italic;">
               <p>Thank you for shopping with us!</p>
-              <p>Digital Bill Generated via POS Pro</p>
+              <p style="margin: 2px 0;">Digital Bill Generated via POS Pro</p>
+              <p style="margin: 2px 0; font-weight: bold;">Software by NIVAN SOLUTIONS</p>
             </div>
 
             <script>
@@ -243,6 +244,7 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
             <div className="mt-8 text-center text-xs text-slate-400 italic">
               <p>Thank you for shopping with us!</p>
               <p className="mt-1">Digital Bill Generated via POS Pro</p>
+              <p className="mt-1 font-bold">Software by NIVAN SOLUTIONS</p>
             </div>
           </div>
 

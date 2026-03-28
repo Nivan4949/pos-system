@@ -118,6 +118,10 @@ export class EscPosBuilder {
     builder.alignCenter()
            .feed(1)
            .line('Thank you for shopping!')
+           .line('Digital Bill by POS Pro')
+           .bold(true)
+           .line('Software by NIVAN SOLUTIONS')
+           .bold(false)
            .feed(3)
            .cut();
 

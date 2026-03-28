@@ -77,7 +77,8 @@ const pdfUtil = {
     // --- Footer ---
     doc.fontSize(8)
        .fillColor('#999999')
-       .text('Thank you for shopping with us! Digital Receipt via POS Pro Suite.', 50, 700, { align: 'center' });
+       .text('Thank you for shopping with us! Digital Receipt via POS Pro Suite.', 50, 690, { align: 'center' })
+       .text('Software by NIVAN SOLUTIONS', 50, 705, { align: 'center', bold: true });
 
     doc.end();
   },
@@ -123,7 +124,10 @@ const pdfUtil = {
        .fontSize(12)
        .text(`Total Refunded: ₹${salesReturn.totalAmount.toFixed(2)}`, 350, y + 20, { bold: true });
 
-    doc.fontSize(8).text('Amount credited to your digital wallet.', 50, 700, { align: 'center' });
+    doc.fontSize(8)
+       .fillColor('#999999')
+       .text('Amount credited to your digital wallet.', 50, 690, { align: 'center' })
+       .text('Software by NIVAN SOLUTIONS', 50, 705, { align: 'center', bold: true });
     doc.end();
   }
 };
