@@ -107,13 +107,29 @@ router.put('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   }
 });
 
-// Delete product
-router.delete('/:id', auth(['ADMIN']), async (req, res) => {
+// Delete product (Smart Delete: Soft-delete if history exists)
+router.delete('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.product.delete({ where: { id } });
-    res.json({ message: 'Product deleted successfully' });
+    
+    try {
+      // Try Hard Delete
+      await prisma.product.delete({ where: { id } });
+      res.json({ message: 'Product fully deleted from system.' });
+    } catch (dbError) {
+      // If error P2003 (Foreign Key Constraint), then Archive
+      if (dbError.code === 'P2003') {
+        await prisma.product.update({ 
+          where: { id }, 
+          data: { is_active: false } 
+        });
+        res.json({ message: 'Product archived (set to inactive) instead of deleted, because it has transaction history.' });
+      } else {
+        throw dbError;
+      }
+    }
   } catch (error) {
+    console.error('Delete Error:', error);
     res.status(500).json({ error: error.message });
   }
 });

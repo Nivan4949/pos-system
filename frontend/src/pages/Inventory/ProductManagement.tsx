@@ -44,10 +44,12 @@ const ProductManagement = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await api.delete(`/products/${id}`);
+        const response = await api.delete(`/products/${id}`);
+        alert(response.data.message || 'Operation successful');
         fetchProducts();
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error deleting product:', error);
+        alert('Action Failed: ' + (error.response?.data?.error || error.message));
       }
     }
   };
