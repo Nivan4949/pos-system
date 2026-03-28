@@ -89,7 +89,8 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
         try {
             const customer = await prisma.customer.findUnique({ where: { id: salesReturn.customerId } });
             if (customer && customer.phone) {
-                await whatsappUtil.sendReturnReceipt(salesReturn, customer.phone);
+                const waResult = await whatsappUtil.sendReturnReceipt(salesReturn, customer.phone);
+                salesReturn.whatsappStatus = waResult;
             }
         } catch (err) {
             console.error('WhatsApp Automation (Return) Error:', err);

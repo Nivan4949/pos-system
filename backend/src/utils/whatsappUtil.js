@@ -55,7 +55,6 @@ const whatsappUtil = {
     try {
       console.log(`[WhatsApp] Triggering automated message to ${formattedPhone} (Invoice: ${order.invoiceNo})`);
       
-      // MANY automated WhatsApp APIs (like UltraMsg) require application/x-www-form-urlencoded
       const params = new URLSearchParams();
       params.append('token', apiKey);
       params.append('to', formattedPhone);
@@ -67,9 +66,11 @@ const whatsappUtil = {
       });
 
       console.log(`[WhatsApp] API Response for ${formattedPhone}:`, JSON.stringify(response.data));
+      return { success: true, message: 'Sent automatically' };
     } catch (error) {
       const errorData = error.response?.data ? JSON.stringify(error.response.data) : error.message;
       console.error(`[WhatsApp] API Failure for ${formattedPhone}:`, errorData);
+      return { success: false, error: typeof errorData === 'string' ? errorData : 'API Error' };
     }
   },
 

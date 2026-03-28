@@ -133,7 +133,8 @@ router.post('/', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
             const customer = await prisma.customer.findUnique({ where: { id: order.customerId } });
             if (customer && customer.phone) {
                 // We MUST await this on Vercel to prevent process termination before the HTTP request completes
-                await whatsappUtil.sendReceipt(order, customer.phone);
+                const waResult = await whatsappUtil.sendReceipt(order, customer.phone);
+                order.whatsappStatus = waResult;
             }
         } catch (err) {
             console.error('WhatsApp Automation Error:', err);
@@ -162,8 +163,8 @@ router.post('/share-whatsapp', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req
 
     if (!order) return res.status(404).json({ error: 'Order not found' });
     
-    await whatsappUtil.sendReceipt(order, phone);
-    res.json({ success: true, message: 'WhatsApp message triggered' });
+    const waResult = await whatsappUtil.sendReceipt(order, phone);
+    res.json({ success: true, message: 'WhatsApp message triggered', whatsappStatus: waResult });
   } catch (error) {
     console.error('WhatsApp Share Error:', error);
     res.status(500).json({ error: error.message });

@@ -116,17 +116,34 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
       printWindow.document.close();
     };
 
+    const [waStatus, setWaStatus] = React.useState<any>(order.whatsappStatus || null);
+    const [isSending, setIsSending] = React.useState(false);
+
     const handleWhatsAppProceed = async (phone: string) => {
+      setIsSending(true);
       try {
-        // Use the backend to send the message in the background
-        await api.post(`/orders/share-whatsapp`, {
+        const response = await api.post(`/orders/share-whatsapp`, {
           orderId: order.id,
           phone: phone
         });
-        alert('WhatsApp message sent successfully in background.');
+        setWaStatus(response.data.whatsappStatus);
+        if (response.data.whatsappStatus?.success) {
+           // Success - no need to do anything else
+        } else {
+           // Soft failure (API error)
+           console.error('WhatsApp API error:', response.data.whatsappStatus?.error);
+        }
       } catch (error) {
         console.error('Failed to send WhatsApp message through backend:', error);
-        // Fallback for local testing if API isn't configured
+        setWaStatus({ success: false, error: 'Connection to server failed' });
+      } finally {
+        setIsSending(false);
+        setShowWhatsAppModal(false);
+      }
+    };
+
+    const handleManualShare = () => {
+        // Fallback for manual sharing ONLY if explicitly requested
         const items = order.orderItems?.map((item: any) => {
           const name = item.product?.name || item.name || 'Product';
           return `• ${name} x ${item.quantity} = ₹${(item.total || (item.price * item.quantity)).toFixed(2)}`;
@@ -143,9 +160,8 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
                         `_Digital Receipt via POS Pro_`;
 
         const encodedMessage = encodeURIComponent(message);
+        const phone = order.customer?.phone || '';
         window.open(`https://wa.me/91${phone}?text=${encodedMessage}`, '_blank');
-      }
-      setShowWhatsAppModal(false);
     };
 
     return (
@@ -228,13 +244,39 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
             </div>
           </div>
 
+          {/* Status Indicator */}
+          {!isSending && waStatus && (
+            <div className={`px-4 py-2 text-center text-xs font-black uppercase tracking-widest ${waStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+               {waStatus.success ? (
+                 <span className="flex items-center justify-center gap-2">✅ WhatsApp: Sent Successfully</span>
+               ) : (
+                 <div className="flex flex-col gap-1">
+                   <span>❌ WhatsApp: {waStatus.error || 'Failed to send'}</span>
+                   <button onClick={handleManualShare} className="underline decoration-2 underline-offset-4 hover:text-red-900 transition-colors">
+                     Try Manual Share Instead
+                   </button>
+                 </div>
+               )}
+            </div>
+          )}
+
           <div className="p-6 bg-slate-50 border-t flex gap-4 print:hidden">
             <button 
               onClick={() => setShowWhatsAppModal(true)}
-              className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-all"
+              disabled={isSending}
+              className={`flex-1 ${waStatus?.success ? 'bg-green-600' : 'bg-slate-800'} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50`}
             >
-              <Share2 size={18} />
-              <span>WhatsApp</span>
+              {isSending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Sending...</span>
+                </>
+              ) : (
+                <>
+                  <Share2 size={18} />
+                  <span>{waStatus?.success ? 'Resend WhatsApp' : 'WhatsApp'}</span>
+                </>
+              )}
             </button>
             <button 
               onClick={handlePrint}
