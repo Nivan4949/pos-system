@@ -63,10 +63,9 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
           </head>
           <body>
             <div class="text-center">
-              <h1 style="margin: 0; font-size: 18px; text-transform: uppercase;">Modern POS Retail</h1>
+              <h1 style="margin: 0; font-size: 18px; text-transform: uppercase;">FRESH NAAD</h1>
               <p style="margin: 2px 0; font-size: 10px;">123, Business Hub, MG Road</p>
               <p style="margin: 2px 0; font-size: 10px;">Bangalore - 560001</p>
-              <p style="margin: 5px 0; font-size: 10px; font-weight: bold;">GSTIN: 29AAAAA0000A1Z5</p>
             </div>
 
             <div class="dashed-border"></div>
@@ -95,11 +94,8 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
             <div class="dashed-border"></div>
 
             <div style="margin-top: 10px;">
-              <div class="total-row"><span>Subtotal:</span><span>₹${(order.subtotal || 0).toFixed(2)}</span></div>
-              <div class="total-row"><span>CGST (9%):</span><span>₹${((order.taxTotal || 0) / 2).toFixed(2)}</span></div>
-              <div class="total-row"><span>SGST (9%):</span><span>₹${((order.taxTotal || 0) / 2).toFixed(2)}</span></div>
               <div class="total-row grand-total">
-                <span>Grand Total:</span>
+                <span>Total Amount:</span>
                 <span>₹${(order.grandTotal || 0).toFixed(2)}</span>
               </div>
             </div>
@@ -148,7 +144,7 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
     const handleBluetoothPrint = async () => {
       try {
         const businessInfo = {
-          name: 'MODERN POS RETAIL',
+          name: 'FRESH NAAD',
           address: '123, Business Hub, MG Road, Bangalore',
           phone: '9876543210'
         };
@@ -195,10 +191,9 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
 
           <div className="flex-1 overflow-y-auto p-8 font-mono text-sm text-slate-800 print:overflow-visible print:p-4" id="receipt-content">
             <div className="text-center mb-6">
-              <h1 className="text-xl font-black uppercase tracking-tighter mb-1">Modern POS Retail</h1>
+              <h1 className="text-xl font-black uppercase tracking-tighter mb-1">FRESH NAAD</h1>
               <p className="text-xs">123, Business Hub, MG Road</p>
               <p className="text-xs">Bangalore - 560001</p>
-              <p className="text-xs font-bold mt-2">GSTIN: 29AAAAA0000A1Z5</p>
             </div>
 
             <div className="border-t border-b border-dashed border-slate-300 py-3 mb-6 space-y-1">
@@ -239,20 +234,8 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({ order, onClose }) => {
             </table>
 
             <div className="border-t-2 border-double border-slate-300 pt-4 space-y-2">
-              <div className="flex justify-between font-medium">
-                <span>Subtotal:</span>
-                <span>₹{(order.subtotal || 0).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>CGST (9%):</span>
-                <span>₹{((order.taxTotal || 0) / 2).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>SGST (9%):</span>
-                <span>₹{((order.taxTotal || 0) / 2).toFixed(2)}</span>
-              </div>
               <div className="flex justify-between text-lg font-black pt-2 border-t border-slate-100">
-                <span>Grand Total:</span>
+                <span>Total Amount:</span>
                 <span>₹{(order.grandTotal || 0).toFixed(2)}</span>
               </div>
             </div>

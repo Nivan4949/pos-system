@@ -109,8 +109,6 @@ export class EscPosBuilder {
 
     // Totals
     builder.alignRight()
-           .line(`Subtotal: ${order.subtotal.toFixed(2)}`)
-           .line(`Tax: ${order.taxTotal.toFixed(2)}`)
            .bold(true)
            .doubleSize(true)
            .line(`TOTAL: ${order.grandTotal.toFixed(2)}`)

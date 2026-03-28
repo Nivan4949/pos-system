@@ -18,11 +18,10 @@ const pdfUtil = {
     // --- Header Section ---
     doc.fillColor('#444444')
        .fontSize(20)
-       .text('MODERN POS RETAIL', 50, 50, { align: 'left' })
+       .text('FRESH NAAD', 50, 50, { align: 'left' })
        .fontSize(10)
        .text('123, Business Hub, MG Road', 200, 50, { align: 'right' })
        .text('Bangalore - 560001', 200, 65, { align: 'right' })
-       .text('GSTIN: 29AAAAA0000A1Z5', 200, 80, { align: 'right' })
        .moveDown();
 
     doc.moveTo(50, 100).lineTo(550, 100).stroke('#EEEEEE');
@@ -71,14 +70,9 @@ const pdfUtil = {
     const totalY = y + 20;
     doc.moveTo(50, totalY).lineTo(550, totalY).stroke('#EEEEEE');
     
-    doc.fontSize(10)
-       .text('Subtotal:', 350, totalY + 10)
-       .text(`₹${order.subtotal.toFixed(2)}`, 500, totalY + 10)
-       .text('Tax (GST):', 350, totalY + 25)
-       .text(`₹${order.taxTotal.toFixed(2)}`, 500, totalY + 25)
-       .fontSize(12)
-       .text('Grand Total:', 350, totalY + 45, { bold: true })
-       .text(`₹${order.grandTotal.toFixed(2)}`, 500, totalY + 45, { bold: true });
+    doc.fontSize(12)
+       .text('Total Amount:', 350, totalY + 10, { bold: true })
+       .text(`₹${order.grandTotal.toFixed(2)}`, 500, totalY + 10, { bold: true });
 
     // --- Footer ---
     doc.fontSize(8)
@@ -99,8 +93,7 @@ const pdfUtil = {
        .fontSize(20)
        .text('CREDIT NOTE', 50, 50, { align: 'left' })
        .fontSize(10)
-       .text('MODERN POS RETAIL', 200, 50, { align: 'right' })
-       .text('GSTIN: 29AAAAA0000A1Z5', 200, 65, { align: 'right' });
+       .text('FRESH NAAD', 200, 50, { align: 'right' });
 
     doc.moveDown();
     doc.fillColor('#000000')
