@@ -3,6 +3,20 @@ const router = express.Router();
 const prisma = require('../config/prisma');
 const auth = require('../middleware/auth');
 
+// Get unique supplier names for suggestions
+router.get('/suppliers/suggestions', auth(['ADMIN', 'MANAGER', 'CASHIER']), async (req, res) => {
+  try {
+    const purchases = await prisma.purchase.findMany({
+      select: { supplierName: true },
+      distinct: ['supplierName'],
+    });
+    const suppliers = purchases.map(p => p.supplierName).filter(Boolean);
+    res.json(suppliers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Create new purchase (Stock In)
 router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {

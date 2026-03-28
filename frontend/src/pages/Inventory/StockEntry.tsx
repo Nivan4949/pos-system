@@ -8,6 +8,8 @@ const StockEntry = () => {
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<any[]>([]);
   const [supplierName, setSupplierName] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -19,7 +21,16 @@ const StockEntry = () => {
         console.error('Error fetching products:', error);
       }
     };
+    const fetchSuggestions = async () => {
+      try {
+        const response = await api.get('/purchases/suppliers/suggestions');
+        setSuggestions(response.data);
+      } catch (error) {
+        console.error('Error fetching supplier suggestions:', error);
+      }
+    };
     fetchProducts();
+    fetchSuggestions();
   }, []);
 
   const addToCart = (product: Product) => {
@@ -147,15 +158,40 @@ const StockEntry = () => {
             </div>
             
             <div className="p-6">
-               <div className="mb-6">
+               <div className="mb-6 relative">
                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Supplier Details</label>
                   <input 
                     type="text" 
                     placeholder="Enter Supplier Name or ID" 
                     className="w-full p-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 font-bold text-slate-800"
                     value={supplierName}
-                    onChange={(e) => setSupplierName(e.target.value)}
+                    onChange={(e) => {
+                        setSupplierName(e.target.value);
+                        setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   />
+                  {showSuggestions && supplierName && suggestions.filter(s => s.toLowerCase().includes(supplierName.toLowerCase()) && s !== supplierName).length > 0 && (
+                    <div className="absolute z-10 w-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden max-h-48 overflow-y-auto">
+                        {suggestions
+                            .filter(s => s.toLowerCase().includes(supplierName.toLowerCase()) && s !== supplierName)
+                            .map((s, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                        setSupplierName(s);
+                                        setShowSuggestions(false);
+                                    }}
+                                    className="w-full p-4 text-left hover:bg-blue-50 text-slate-700 font-bold border-b border-slate-50 last:border-0 transition-colors"
+                                >
+                                    {s}
+                                </button>
+                            ))
+                        }
+                    </div>
+                  )}
                </div>
 
                <div className="overflow-x-auto mb-6">
