@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/api';
-import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, Calendar, FileText, IndianRupee, PieChart, Package, Receipt, X } from 'lucide-react';
+import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, Calendar, FileText, IndianRupee, PieChart, Package, Receipt, X, ArrowUpRight } from 'lucide-react';
 import PartyDetailsModal from '../../components/PartyDetailsModal';
 import BillDetailsModal from '../../components/BillDetailsModal';
 
