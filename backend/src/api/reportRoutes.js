@@ -69,7 +69,7 @@ router.get('/summary', async (req, res) => {
       .slice(0, 5);
 
     res.json({
-      totalRevenue: totalRevenue._sum.grandTotal || 0,
+      totalRevenue: totalRevenue._sum?.grandTotal || 0,
       totalOrders,
       lowStockAlerts,
       activeTerminals,
