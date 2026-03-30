@@ -9,7 +9,7 @@
     "build": "cd frontend && npx vite build && cd .. && mkdir -p dist && cp -R frontend/dist/* dist/ && npx prisma generate --schema=database/schema/schema.prisma",
     "start": "node api/index.js",
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
-    "postinstall": "echo 'Vercel Environment Ready'"
+    "postinstall": "npx prisma generate --schema=database/schema/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",
