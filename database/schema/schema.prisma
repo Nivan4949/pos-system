@@ -6,7 +6,6 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../../backend/node_modules/@prisma/client"
 }
 
 model User {
@@ -235,8 +234,20 @@ model Purchase {
   date            DateTime       @default(now())
   purchaseItems   PurchaseItem[]
   purchaseReturns PurchaseReturn[]
+  payments        PurchasePayment[]
   createdAt       DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  updatedAt       DateTime       @updatedAt
+}
+
+model PurchasePayment {
+  id            String   @id @default(uuid())
+  purchase      Purchase @relation(fields: [purchaseId], references: [id])
+  purchaseId    String
+  method        String   @default("CASH") // CASH, UPI, CARD, BANK
+  amount        Float
+  transactionId String?
+  date          DateTime @default(now())
+  createdAt     DateTime @default(now())
 }
 
 model PurchaseItem {

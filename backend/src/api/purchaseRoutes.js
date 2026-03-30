@@ -23,16 +23,17 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
     const { 
       supplierName, 
       purchaseItems, 
-      subtotal, 
-      taxTotal, 
-      totalDiscount,
-      grandTotal, 
-      amountPaid, 
-      balanceDue, 
       paymentMode, 
       paymentStatus,
       date 
     } = req.body;
+
+    const subtotal = Number(req.body.subtotal) || 0;
+    const taxTotal = Number(req.body.taxTotal) || 0;
+    const totalDiscount = Number(req.body.totalDiscount) || 0;
+    const grandTotal = Number(req.body.grandTotal) || 0;
+    const amountPaid = Number(req.body.amountPaid) || 0;
+    const balanceDue = Number(req.body.balanceDue) || 0;
 
     // Generate Simple Sequential Purchase Invoice Number
     const purchaseCount = await prisma.purchase.count();
@@ -72,10 +73,6 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
               date: date ? new Date(date) : new Date()
             }
           } : undefined
-        },
-        include: {
-          purchaseItems: true,
-          payments: true
         }
       });
 
@@ -119,10 +116,12 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
 router.post('/:id/payments', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, method, transactionId, date } = req.body;
+    const amount = Number(req.body.amount);
+    const { method, transactionId, date } = req.body;
 
-    if (!amount || amount <= 0) return res.status(400).json({ error: 'Valid amount required' });
-
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid payment amount' });
+    }
     const updatedPurchase = await prisma.$transaction(async (tx) => {
       const purchase = await tx.purchase.findUnique({ 
         where: { id },
@@ -153,8 +152,7 @@ router.post('/:id/payments', auth(['ADMIN', 'MANAGER']), async (req, res) => {
           amountPaid: newPaid,
           balanceDue: newBalance,
           paymentStatus: newBalance <= 0 ? 'PAID' : 'PARTIAL'
-        },
-        include: { payments: true }
+        }
       });
     });
 
