@@ -184,7 +184,7 @@ router.get('/daybook', async (req, res) => {
     const purchasePayments = await prisma.purchasePayment.findMany({ 
       where: { date: dateRange },
       include: { purchase: true }
-    });
+    }).catch(() => []);
     
     const transactions = [
       ...sales.map(s => ({ id: s.id, type: 'SALE', amount: s.grandTotal, date: s.createdAt, details: `Bill: ${s.invoiceNo}`, customerId: s.customerId })),
@@ -213,8 +213,16 @@ router.get('/daybook', async (req, res) => {
     const cashIn = sales.reduce((sum, s) => sum + s.grandTotal, 0);
     const cashOut = purchasePayments.reduce((sum, pp) => sum + pp.amount, 0) + expenses.reduce((sum, e) => sum + e.amount, 0);
     
-    res.json({ cashIn, cashOut, netBalance: cashIn - cashOut, transactions });
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    res.json({
+      transactions,
+      cashIn: Number(cashIn) || 0,
+      cashOut: Number(cashOut) || 0,
+      netBalance: Number(cashIn - cashOut) || 0
+    });
+  } catch (error) {
+    console.error('Daybook Error:', error);
+    res.json({ transactions: [], cashIn: 0, cashOut: 0, netBalance: 0, error: error.message });
+  }
 });
 
 // 6. Cashflow (Simplified to In/Out matching daybook)
