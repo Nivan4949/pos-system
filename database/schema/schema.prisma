@@ -225,8 +225,12 @@ model Purchase {
   supplierName  String
   subtotal      Float
   taxTotal      Float
+  totalDiscount Float          @default(0)
   grandTotal    Float
-  paymentMode   String
+  amountPaid    Float          @default(0)
+  balanceDue    Float          @default(0)
+  paymentMode   String         @default("CASH")
+  paymentStatus String         @default("PAID") // PAID, PARTIAL, PENDING
   status        String         @default("COMPLETED")
   date            DateTime       @default(now())
   purchaseItems   PurchaseItem[]
@@ -243,6 +247,8 @@ model PurchaseItem {
   productId  String
   quantity   Int
   price      Float
+  discount   Float    @default(0)
+  discountPercent Float @default(0)
   taxAmount  Float
   total      Float
 }

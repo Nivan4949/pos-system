@@ -20,11 +20,17 @@ const reportCategories = [
     ]
   },
   {
-    title: 'Party Reports',
+    title: 'Party Reports (Customer)',
     reports: [
-      { id: 'parties', name: 'All Parties', icon: <Users size={16} /> },
-      { id: 'party-statement', name: 'Party Statement', icon: <FileText size={16} /> },
-      { id: 'party-profit', name: 'Party-wise Profit', icon: <TrendingUp size={16} /> },
+      { id: 'parties', name: 'All Customers', icon: <Users size={16} /> },
+      { id: 'party-statement', name: 'Customer Statement', icon: <FileText size={16} /> },
+    ]
+  },
+  {
+    title: 'Supplier Reports (Parties)',
+    reports: [
+      { id: 'suppliers', name: 'All Suppliers', icon: <Users className="text-orange-500" size={16} /> },
+      { id: 'supplier-ledger', name: 'Supplier Ledger', icon: <FileText className="text-orange-500" size={16} /> },
     ]
   },
   {
@@ -60,6 +66,8 @@ const Reports = () => {
   useEffect(() => {
     if (activeReport === 'party-statement') {
       api.get('/customers').then(res => setEntities(res.data)).catch(console.error);
+    } else if (activeReport === 'supplier-ledger') {
+      api.get('/purchases/suppliers/suggestions').then(res => setEntities(res.data)).catch(console.error);
     } else if (activeReport === 'stock-detail') {
       api.get('/products').then(res => setEntities(res.data)).catch(console.error);
     }
@@ -78,10 +86,9 @@ const Reports = () => {
     
     // Adjust URL for parameterized routes
     if (activeReport === 'party-statement') url = `/reports/party-statement/${selectedEntityId}`;
+    if (activeReport === 'supplier-ledger') url = `/reports/supplier-ledger?supplierName=${selectedEntityId}`;
+    if (activeReport === 'suppliers') url = `/reports/suppliers`;
     if (activeReport === 'stock-detail') url = `/reports/stock-detail/${selectedEntityId}`;
-    if (activeReport === 'credit-notes') url = `/sales-returns?filter=${dateFilter}`;
-    if (activeReport === 'debit-notes') url = `/purchase-returns?filter=${dateFilter}`;
-    if ((activeReport === 'credit-notes' || activeReport === 'debit-notes') && dateFilter === 'Custom') url += `&startDate=${customStart}&endDate=${customEnd}`;
 
     try {
       const response = await api.get(url);
@@ -349,7 +356,7 @@ const Reports = () => {
                         </button>
                       </td>
                       <td className={`p-4 text-right font-black ${t.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {t.amount > 0 ? '+' : ''}₹{t.amount.toFixed(2)}
+                        {t.amount > 0 ? '+' : ''}₹{Math.abs(t.amount).toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -585,6 +592,103 @@ const Reports = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        );
+      }
+
+      case 'suppliers': {
+        return (
+          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-xs text-slate-500 font-bold uppercase border-b">
+                <tr>
+                  <th className="p-4">Supplier Name</th>
+                  <th className="p-4 text-right">Total Purchases</th>
+                  <th className="p-4 text-right text-red-500">Total Balance</th>
+                  <th className="p-4 text-center">Last Interaction</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y text-slate-700 font-medium">
+                {reportData.map((s: any, i: number) => (
+                  <tr key={i} className="hover:bg-slate-50 transition-colors">
+                    <td className="p-4 font-bold text-slate-900">
+                        <button 
+                           onClick={() => { setActiveReport('supplier-ledger'); setSelectedEntityId(s.name); }}
+                           className="text-indigo-600 hover:text-indigo-800 font-black hover:underline text-left"
+                        >
+                            {s.name}
+                        </button>
+                    </td>
+                    <td className="p-4 text-right font-bold text-slate-700">₹{s.totalPurchases.toFixed(2)}</td>
+                    <td className="p-4 text-right font-black text-red-600">₹{s.totalBalance.toFixed(2)}</td>
+                    <td className="p-4 text-center text-slate-500">{new Date(s.lastPurchase).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+                {reportData.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-slate-400">No suppliers found.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+
+      case 'supplier-ledger': {
+        return (
+          <div>
+             <div className="bg-orange-50 p-6 rounded-2xl mb-6 flex justify-between items-center border border-orange-100 shadow-sm">
+                <div>
+                   <h2 className="text-2xl font-black text-orange-900">{reportData.name}</h2>
+                   <p className="text-sm font-bold text-orange-500 uppercase tracking-widest">Party Ledger</p>
+                </div>
+                <div className="text-right">
+                   <p className="text-xs uppercase font-bold text-orange-400">Net Outstanding</p>
+                   <h3 className="text-3xl font-black text-red-600">₹{reportData.totalBalance?.toFixed(2)}</h3>
+                </div>
+             </div>
+             
+             <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Purchases</p>
+                    <p className="text-xl font-black text-slate-800">₹{reportData.totalPurchases?.toFixed(2)}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Paid</p>
+                    <p className="text-xl font-black text-green-600">₹{reportData.totalPaid?.toFixed(2)}</p>
+                </div>
+             </div>
+
+             <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 text-xs text-slate-500 font-bold uppercase border-b">
+                    <tr>
+                      <th className="p-4">Date</th>
+                      <th className="p-4">Invoice</th>
+                      <th className="p-4 text-center">Status</th>
+                      <th className="p-4 text-right">Bill Amt</th>
+                      <th className="p-4 text-right text-red-500">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y text-slate-700 font-medium">
+                    {reportData.purchases?.map((p: any) => (
+                      <tr key={p.id} className="hover:bg-slate-50">
+                        <td className="p-4">{new Date(p.date || p.createdAt).toLocaleDateString()}</td>
+                        <td className="p-4 font-bold text-slate-800">{p.invoiceNo}</td>
+                        <td className="p-4 text-center">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                                p.paymentStatus === 'PAID' ? 'bg-green-100 text-green-600' : 
+                                p.paymentStatus === 'PARTIAL' ? 'bg-orange-100 text-orange-600' : 
+                                'bg-red-100 text-red-600'
+                            }`}>
+                                {p.paymentStatus}
+                            </span>
+                        </td>
+                        <td className="p-4 text-right font-bold">₹{p.grandTotal.toFixed(2)}</td>
+                        <td className="p-4 text-right font-black text-red-600">₹{p.balanceDue.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                    {(!reportData.purchases || reportData.purchases.length === 0) && <tr><td colSpan={5} className="p-8 text-center text-slate-400">No transactions for this supplier.</td></tr>}
+                  </tbody>
+                </table>
+             </div>
           </div>
         );
       }

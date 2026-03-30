@@ -180,12 +180,18 @@ router.get('/daybook', async (req, res) => {
     
     const transactions = [
       ...sales.map(s => ({ id: s.id, type: 'SALE', amount: s.grandTotal, date: s.createdAt, details: `Bill: ${s.invoiceNo}`, customerId: s.customerId })),
-      ...purchases.map(p => ({ id: p.id, type: 'PURCHASE', amount: -p.grandTotal, date: p.createdAt, details: `Inv: ${p.invoiceNo}` })),
+      ...purchases.map(p => ({ 
+        id: p.id, 
+        type: 'PURCHASE', 
+        amount: -(p.amountPaid || 0), 
+        date: p.createdAt, 
+        details: `Inv: ${p.invoiceNo}${p.paymentStatus === 'PENDING' ? ' (PENDING)' : p.paymentStatus === 'PARTIAL' ? ' (PARTIAL)' : ''}` 
+      })),
       ...expenses.map(e => ({ id: e.id, type: 'EXPENSE', amount: -e.amount, date: e.createdAt, details: e.type }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     const cashIn = sales.reduce((sum, s) => sum + s.grandTotal, 0);
-    const cashOut = purchases.reduce((sum, p) => sum + p.grandTotal, 0) + expenses.reduce((sum, e) => sum + e.amount, 0);
+    const cashOut = purchases.reduce((sum, p) => sum + (p.amountPaid || 0), 0) + expenses.reduce((sum, e) => sum + e.amount, 0);
     
     res.json({ cashIn, cashOut, netBalance: cashIn - cashOut, transactions });
   } catch (error) { res.status(500).json({ error: error.message }); }
@@ -227,13 +233,59 @@ router.get('/parties', async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// 9. Party Statement
+// 9. Party Statement (Customer)
 router.get('/party-statement/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const customer = await prisma.customer.findUnique({ where: { id }, include: { orders: true } });
     if (!customer) return res.status(404).json({ message: 'Not found' });
     res.json(customer);
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// 9.1 All Suppliers
+router.get('/suppliers', async (req, res) => {
+  try {
+    const purchases = await prisma.purchase.findMany();
+    const suppliersMap = {};
+    
+    purchases.forEach(p => {
+      if (!suppliersMap[p.supplierName]) {
+        suppliersMap[p.supplierName] = { name: p.supplierName, totalPurchases: 0, totalBalance: 0, lastPurchase: p.createdAt };
+      }
+      suppliersMap[p.supplierName].totalPurchases += p.grandTotal;
+      suppliersMap[p.supplierName].totalBalance += p.balanceDue;
+      if (new Date(p.createdAt) > new Date(suppliersMap[p.supplierName].lastPurchase)) {
+        suppliersMap[p.supplierName].lastPurchase = p.createdAt;
+      }
+    });
+
+    res.json(Object.values(suppliersMap));
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// 9.2 Supplier Ledger
+router.get('/supplier-ledger', async (req, res) => {
+  try {
+    const { supplierName } = req.query;
+    if (!supplierName) return res.status(400).json({ error: 'Supplier name required' });
+
+    const purchases = await prisma.purchase.findMany({
+      where: { supplierName },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const totalPurchases = purchases.reduce((sum, p) => sum + p.grandTotal, 0);
+    const totalPaid = purchases.reduce((sum, p) => sum + p.amountPaid, 0);
+    const totalBalance = purchases.reduce((sum, p) => sum + p.balanceDue, 0);
+
+    res.json({
+      name: supplierName,
+      totalPurchases,
+      totalPaid,
+      totalBalance,
+      purchases
+    });
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 

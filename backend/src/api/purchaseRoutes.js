@@ -20,7 +20,19 @@ router.get('/suppliers/suggestions', auth(['ADMIN', 'MANAGER', 'CASHIER']), asyn
 // Create new purchase (Stock In)
 router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
-    const { supplierName, purchaseItems, subtotal, taxTotal, grandTotal, paymentMode, date } = req.body;
+    const { 
+      supplierName, 
+      purchaseItems, 
+      subtotal, 
+      taxTotal, 
+      totalDiscount,
+      grandTotal, 
+      amountPaid, 
+      balanceDue, 
+      paymentMode, 
+      paymentStatus,
+      date 
+    } = req.body;
 
     // Generate Simple Sequential Purchase Invoice Number
     const purchaseCount = await prisma.purchase.count();
@@ -34,8 +46,12 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
           supplierName,
           subtotal,
           taxTotal,
+          totalDiscount: totalDiscount || 0,
           grandTotal,
-          paymentMode,
+          amountPaid: amountPaid || 0,
+          balanceDue: balanceDue || 0,
+          paymentMode: paymentMode || 'CASH',
+          paymentStatus: paymentStatus || 'PAID',
           date: date ? new Date(date) : new Date(),
           status: 'COMPLETED',
           purchaseItems: {
@@ -43,6 +59,8 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
               productId: item.productId,
               quantity: item.quantity,
               price: item.price,
+              discount: item.discount || 0,
+              discountPercent: item.discountPercent || 0,
               taxAmount: item.taxAmount || 0,
               total: item.total
             }))
@@ -107,7 +125,19 @@ router.get('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
 router.put('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {
     const { id } = req.params;
-    const { supplierName, purchaseItems: newItems, subtotal, taxTotal, grandTotal, paymentMode, date } = req.body;
+    const { 
+      supplierName, 
+      purchaseItems: newItems, 
+      subtotal, 
+      taxTotal, 
+      totalDiscount,
+      grandTotal, 
+      amountPaid, 
+      balanceDue, 
+      paymentMode, 
+      paymentStatus,
+      date 
+    } = req.body;
 
     const updatedPurchase = await prisma.$transaction(async (tx) => {
       const oldPurchase = await tx.purchase.findUnique({
@@ -158,14 +188,20 @@ router.put('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
           supplierName,
           subtotal,
           taxTotal,
+          totalDiscount: totalDiscount || 0,
           grandTotal,
-          paymentMode,
+          amountPaid: amountPaid || 0,
+          balanceDue: balanceDue || 0,
+          paymentMode: paymentMode || 'CASH',
+          paymentStatus: paymentStatus || 'PAID',
           date: date ? new Date(date) : undefined,
           purchaseItems: {
             create: newItems.map(item => ({
               productId: item.productId || item.id,
               quantity: item.quantity,
               price: item.price,
+              discount: item.discount || 0,
+              discountPercent: item.discountPercent || 0,
               taxAmount: item.taxAmount || 0,
               total: item.total
             }))
