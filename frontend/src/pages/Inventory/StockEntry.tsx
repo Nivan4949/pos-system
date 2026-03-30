@@ -171,18 +171,20 @@ const StockEntry = () => {
                   placeholder="Abc company" 
                   className="w-full py-2 bg-transparent border-none focus:ring-0 font-bold text-slate-800 text-lg placeholder:text-slate-200"
                   value={supplierName}
+                  autoComplete="off"
                   onChange={(e) => {
                       setSupplierName(e.target.value);
                       setShowSuggestions(true);
                   }}
                   onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 />
               </div>
 
-              {showSuggestions && supplierName && suggestions.filter(s => s.toLowerCase().includes(supplierName.toLowerCase()) && s !== supplierName).length > 0 && (
+              {showSuggestions && (
                 <div className="absolute z-[60] w-full mt-4 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden max-h-48 overflow-y-auto">
                     {suggestions
-                        .filter(s => s.toLowerCase().includes(supplierName.toLowerCase()) && s !== supplierName)
+                        .filter(s => s.toLowerCase().includes(supplierName.toLowerCase()))
                         .map((s, idx) => (
                             <button
                                 key={idx}
@@ -198,6 +200,11 @@ const StockEntry = () => {
                             </button>
                         ))
                     }
+                    {suggestions.filter(s => s.toLowerCase().includes(supplierName.toLowerCase())).length === 0 && (
+                        <div className="p-4 text-center text-slate-400 text-xs font-bold uppercase tracking-widest bg-slate-50">
+                            New Party / No Suggestions
+                        </div>
+                    )}
                 </div>
               )}
            </div>
