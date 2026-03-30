@@ -35,6 +35,10 @@ const StockEntry = () => {
   const [loading, setLoading] = useState(false);
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
   const [billNo, setBillNo] = useState('');
+  
+  // Payment State (Restore Logic)
+  const [isPaid, setIsPaid] = useState(true);
+  const [paidAmount, setPaidAmount] = useState<string>('');
 
   // Step Control
   const [step, setStep] = useState<'main' | 'add-item'>('main');
@@ -116,14 +120,17 @@ const StockEntry = () => {
 
     setLoading(true);
     try {
+      const finalPaid = isPaid ? (parseFloat(paidAmount) || grandTotal) : 0;
       const purchaseData = {
         supplierName,
         purchaseItems: cart,
-        subtotal: grandTotal,
+        subtotal: grandTotal, // Note: subtotal here is grandTotal before discount? Or after? Image shows Subtotal 300.0 same as Total
+        totalDiscount: cart.reduce((s, i) => s + (i.discount || 0), 0),
         taxTotal: 0,
         grandTotal: grandTotal,
-        amountPaid: grandTotal, // Defaulting to full payment on this simple flow for now
-        paymentStatus: 'PAID',
+        amountPaid: finalPaid,
+        balanceDue: grandTotal - finalPaid,
+        paymentStatus: finalPaid === grandTotal ? 'PAID' : finalPaid > 0 ? 'PARTIAL' : 'PENDING',
         paymentMode: 'CASH',
         date: purchaseDate
       };
@@ -223,38 +230,104 @@ const StockEntry = () => {
               )}
            </div>
 
-           {/* Add Items Toggle - Exact Button from Image 1 */}
+           {/* Billed Items Section (Image 4) */}
+           {cart.length > 0 && (
+             <>
+               <div className="flex items-center gap-2 bg-blue-400 p-2 rounded-md text-white">
+                  <Check size={14} strokeWidth={4} />
+                  <span className="text-[11px] font-black uppercase tracking-widest">Billed Items</span>
+               </div>
+
+               <div className="space-y-3">
+                  {cart.map((item, idx) => (
+                    <div key={idx} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-2 relative">
+                        <div className="flex justify-between items-start">
+                           <div className="flex items-center gap-2">
+                              <span className="bg-white border border-slate-200 text-[10px] font-black text-slate-400 px-1.5 py-0.5 rounded">#{idx + 1}</span>
+                              <h4 className="font-bold text-slate-800 text-[15px]">{item.name}</h4>
+                           </div>
+                           <p className="font-black text-slate-800 text-[15px]">₹{item.total.toFixed(0)}</p>
+                        </div>
+                        
+                        <div className="flex justify-between text-[11px] font-bold">
+                           <span className="text-slate-400">Item Subtotal</span>
+                           <span className="text-slate-500">{item.quantity} {item.unit} x {item.price} = ₹{(item.quantity * item.price)}</span>
+                        </div>
+
+                        <div className="flex justify-between text-[11px] font-bold text-orange-400">
+                           <span>Discount (%): {item.discountPercent || 0}</span>
+                           <span>₹{item.discount || 0}</span>
+                        </div>
+
+                        <button 
+                          onClick={() => setCart(cart.filter((_, i) => i !== idx))}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-white border border-red-100 text-red-500 rounded-full flex items-center justify-center shadow-sm"
+                        >
+                          <Trash size={12} />
+                        </button>
+                    </div>
+                  ))}
+               </div>
+
+               {/* Summary Table Row (Image 4) */}
+               <div className="grid grid-cols-2 gap-y-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-4 px-2">
+                  <div className="flex justify-between pr-4"><span>Total Disc:</span> <span className="text-slate-600">0.0</span></div>
+                  <div className="flex justify-between pl-4"><span>Total Tax Amt:</span> <span className="text-slate-600">0.0</span></div>
+                  <div className="flex justify-between pr-4"><span>Total Qty:</span> <span className="text-slate-600">{cart.reduce((s,i)=>s+i.quantity, 0).toFixed(1)}</span></div>
+                  <div className="flex justify-between pl-4"><span>Subtotal:</span> <span className="text-slate-600">{grandTotal.toFixed(1)}</span></div>
+               </div>
+             </>
+           )}
+
+           {/* Add Items Toggle */}
            <button 
              onClick={() => setStep('add-item')}
-             className="w-full border-2 border-slate-200 p-3.5 rounded-xl flex items-center justify-center gap-2 text-blue-600 font-black text-sm hover:bg-slate-50 transition-all active:scale-[0.98]"
+             className="w-full border-[1.5px] border-blue-200 p-3 rounded-xl flex items-center justify-center gap-2 text-blue-500 font-bold text-[15px] hover:bg-blue-50 transition-all active:scale-[0.98]"
            >
-              <Plus size={20} strokeWidth={3} /> Add Items <span className="text-slate-300 font-bold ml-1">(Optional)</span>
+              <Plus size={18} strokeWidth={3} /> Add Items
            </button>
 
-           {/* Running List Summary */}
-           <div className="space-y-3">
-              {cart.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                   <div>
-                     <p className="font-black text-slate-800 text-sm">{item.name}</p>
-                     <p className="text-[10px] font-bold text-slate-400 capitalize">{item.quantity} {item.unit} x ₹{item.price}</p>
-                   </div>
-                   <div className="flex items-center gap-4">
-                      <p className="font-black text-slate-800">₹{item.total}</p>
-                      <button onClick={() => setCart(cart.filter((_, i) => i !== idx))} className="text-red-400 p-2"><Trash size={16} /></button>
-                   </div>
-                </div>
-              ))}
-           </div>
+           {/* Totals & Pending Section (Image 4) */}
+           <div className="bg-slate-50/80 p-5 rounded-2xl space-y-4">
+              <div className="flex justify-between items-center text-slate-800 font-black">
+                 <span className="text-sm">Total Amount</span>
+                 <div className="flex items-center gap-1 flex-1 ml-4 overflow-hidden">
+                    <span className="text-sm">₹</span>
+                    <div className="border-b-[1.5px] border-dotted border-slate-300 h-1 flex-1 min-w-[30px] mb-1"></div>
+                    <span className="text-lg">{grandTotal.toFixed(1)}</span>
+                 </div>
+              </div>
 
-           {/* Total Amount (Image 1 Style) */}
-           <div className="bg-[#F8FAFC] p-4 rounded-xl space-y-2">
               <div className="flex justify-between items-center">
-                 <span className="font-black text-slate-800 text-sm">Total Amount</span>
-                 <div className="flex items-center gap-2 flex-1 ml-4 overflow-hidden">
-                    <span className="font-black text-slate-800">₹</span>
-                    <div className="border-b-[1.5px] border-dotted border-slate-300 h-1 flex-1 min-w-[50px]"></div>
-                    <span className="font-black text-slate-800 text-lg">{grandTotal}</span>
+                 <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setIsPaid(!isPaid)}
+                      className={`w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${isPaid ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-slate-300'}`}
+                    >
+                      {isPaid && <Check size={16} strokeWidth={4} />}
+                    </button>
+                    <span className="font-black text-slate-700 text-sm">Paid</span>
+                 </div>
+                 <div className="flex items-center gap-1 flex-1 ml-4 overflow-hidden">
+                    <span className="text-sm font-black text-slate-900">₹</span>
+                    <div className="border-b-[1.5px] border-dotted border-slate-300 h-1 flex-1 min-w-[30px] mb-1"></div>
+                    <input 
+                      type="number" 
+                      placeholder={grandTotal.toString()}
+                      value={paidAmount}
+                      disabled={!isPaid}
+                      onChange={(e) => setPaidAmount(e.target.value)}
+                      className="bg-transparent border-none p-0 w-24 text-right focus:ring-0 font-black text-lg text-slate-800 placeholder:text-slate-300"
+                    />
+                 </div>
+              </div>
+
+              <div className="flex justify-between items-center text-emerald-500 font-black pt-2">
+                 <span className="text-sm">Balance Due</span>
+                 <div className="flex items-center gap-1 flex-1 ml-4 overflow-hidden">
+                    <span className="text-sm">₹</span>
+                    <div className="border-b-[1.5px] border-dotted border-emerald-200 h-1 flex-1 min-w-[30px] mb-1"></div>
+                    <span className="text-lg">{(grandTotal - (isPaid ? (parseFloat(paidAmount) || grandTotal) : 0)).toFixed(1)}</span>
                  </div>
               </div>
            </div>
