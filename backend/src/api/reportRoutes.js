@@ -177,7 +177,10 @@ router.get('/daybook', async (req, res) => {
     const sales = await prisma.order.findMany({ where: { createdAt: dateRange } });
     const expenses = await prisma.expense.findMany({ where: { createdAt: dateRange } });
     
-    // Fetch individual payments made towards purchases during this period
+    // 1. Fetch Purchase Events (Invoices created during this period)
+    const purchases = await prisma.purchase.findMany({ where: { date: dateRange } }).catch(() => []);
+
+    // 2. Fetch Individual Payments made towards purchases during this period
     const purchasePayments = await prisma.purchasePayment.findMany({ 
       where: { date: dateRange },
       include: { purchase: true }
@@ -185,6 +188,17 @@ router.get('/daybook', async (req, res) => {
     
     const transactions = [
       ...sales.map(s => ({ id: s.id, type: 'SALE', amount: s.grandTotal, date: s.createdAt, details: `Bill: ${s.invoiceNo}`, customerId: s.customerId })),
+      
+      // Show the bill creation event as ₹0 (Record keeping)
+      ...purchases.map(p => ({
+        id: p.id,
+        type: 'PURCHASE',
+        amount: 0, 
+        date: p.date || p.createdAt,
+        details: `Inv: ${p.invoiceNo}${p.paymentStatus === 'PENDING' ? ' (PENDING)' : p.paymentStatus === 'PARTIAL' ? ' (PARTIAL)' : ''}`
+      })),
+
+      // Show the actual cash out (Payment event)
       ...purchasePayments.map(pp => ({ 
         id: pp.id, 
         type: 'PURCHASE_PAYMENT', 
@@ -192,6 +206,7 @@ router.get('/daybook', async (req, res) => {
         date: pp.date, 
         details: `Inv: ${pp.purchase.invoiceNo} (Payment)` 
       })),
+
       ...expenses.map(e => ({ id: e.id, type: 'EXPENSE', amount: -e.amount, date: e.createdAt, details: e.type }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     

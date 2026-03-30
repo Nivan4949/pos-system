@@ -370,12 +370,12 @@ const Reports = () => {
                         )}
                         <button 
                           onClick={() => {
-                            const type = t.type === 'SALE' ? 'SALE' : 'PURCHASE';
+                            const type = (t.type === 'SALE' || t.type === 'TRANSFER') ? 'SALE' : 'PURCHASE';
                             if (t.id) setSelectedBill({ id: t.id, type });
                           }}
                           className={`${t.id ? 'text-indigo-600 hover:text-indigo-800 font-bold hover:underline' : 'text-slate-600'}`}
                         >
-                          {t.details.split(': ')[1]}
+                          {t.details}
                         </button>
                       </td>
                       <td className={`p-4 text-right font-black ${t.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
