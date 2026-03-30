@@ -64,10 +64,18 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
               taxAmount: item.taxAmount || 0,
               total: item.total
             }))
-          }
+          },
+          payments: amountPaid > 0 ? {
+            create: {
+              amount: amountPaid,
+              method: paymentMode || 'CASH',
+              date: date ? new Date(date) : new Date()
+            }
+          } : undefined
         },
         include: {
-          purchaseItems: true
+          purchaseItems: true,
+          payments: true
         }
       });
 
@@ -107,6 +115,55 @@ router.post('/', auth(['ADMIN', 'MANAGER']), async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// Add payment to an existing purchase
+router.post('/:id/payments', auth(['ADMIN', 'MANAGER']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, method, transactionId, date } = req.body;
+
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'Valid amount required' });
+
+    const updatedPurchase = await prisma.$transaction(async (tx) => {
+      const purchase = await tx.purchase.findUnique({ 
+        where: { id },
+        include: { payments: true }
+      });
+
+      if (!purchase) throw new Error('Purchase not found');
+      if (amount > purchase.balanceDue) throw new Error('Payment exceeds balance due');
+
+      const newPaid = purchase.amountPaid + amount;
+      const newBalance = purchase.grandTotal - newPaid;
+
+      // Create payment record
+      await tx.purchasePayment.create({
+        data: {
+          purchaseId: id,
+          amount,
+          method: method || 'CASH',
+          transactionId,
+          date: date ? new Date(date) : new Date()
+        }
+      });
+
+      // Update purchase totals
+      return await tx.purchase.update({
+        where: { id },
+        data: {
+          amountPaid: newPaid,
+          balanceDue: newBalance,
+          paymentStatus: newBalance <= 0 ? 'PAID' : 'PARTIAL'
+        },
+        include: { payments: true }
+      });
+    });
+
+    res.json(updatedPurchase);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get purchase by ID
 router.get('/:id', auth(['ADMIN', 'MANAGER']), async (req, res) => {
   try {

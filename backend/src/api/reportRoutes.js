@@ -175,23 +175,28 @@ router.get('/daybook', async (req, res) => {
     const dateRange = getDateRange(dateFilter, startDate, endDate);
 
     const sales = await prisma.order.findMany({ where: { createdAt: dateRange } });
-    const purchases = await prisma.purchase.findMany({ where: { createdAt: dateRange } }).catch(() => []);
     const expenses = await prisma.expense.findMany({ where: { createdAt: dateRange } });
+    
+    // Fetch individual payments made towards purchases during this period
+    const purchasePayments = await prisma.purchasePayment.findMany({ 
+      where: { date: dateRange },
+      include: { purchase: true }
+    });
     
     const transactions = [
       ...sales.map(s => ({ id: s.id, type: 'SALE', amount: s.grandTotal, date: s.createdAt, details: `Bill: ${s.invoiceNo}`, customerId: s.customerId })),
-      ...purchases.map(p => ({ 
-        id: p.id, 
-        type: 'PURCHASE', 
-        amount: -(p.amountPaid || 0), 
-        date: p.createdAt, 
-        details: `Inv: ${p.invoiceNo}${p.paymentStatus === 'PENDING' ? ' (PENDING)' : p.paymentStatus === 'PARTIAL' ? ' (PARTIAL)' : ''}` 
+      ...purchasePayments.map(pp => ({ 
+        id: pp.id, 
+        type: 'PURCHASE_PAYMENT', 
+        amount: -pp.amount, 
+        date: pp.date, 
+        details: `Inv: ${pp.purchase.invoiceNo} (Payment)` 
       })),
       ...expenses.map(e => ({ id: e.id, type: 'EXPENSE', amount: -e.amount, date: e.createdAt, details: e.type }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     const cashIn = sales.reduce((sum, s) => sum + s.grandTotal, 0);
-    const cashOut = purchases.reduce((sum, p) => sum + (p.amountPaid || 0), 0) + expenses.reduce((sum, e) => sum + e.amount, 0);
+    const cashOut = purchasePayments.reduce((sum, pp) => sum + pp.amount, 0) + expenses.reduce((sum, e) => sum + e.amount, 0);
     
     res.json({ cashIn, cashOut, netBalance: cashIn - cashOut, transactions });
   } catch (error) { res.status(500).json({ error: error.message }); }

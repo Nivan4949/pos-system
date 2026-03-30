@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/api';
-import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, Calendar, FileText, IndianRupee, PieChart, Package, Receipt, X, ArrowUpRight } from 'lucide-react';
+import { BarChart3, TrendingUp, ShoppingBag, Users, Clock, Calendar, FileText, IndianRupee, PieChart, Package, Receipt, X, ArrowUpRight, Plus } from 'lucide-react';
 import PartyDetailsModal from '../../components/PartyDetailsModal';
 import BillDetailsModal from '../../components/BillDetailsModal';
 
@@ -61,6 +61,11 @@ const Reports = () => {
   const [selectedReturn, setSelectedReturn] = useState<any>(null); // For Credit Note Detailed View
   const [selectedPartyId, setSelectedPartyId] = useState<string | null>(null);
   const [selectedBill, setSelectedBill] = useState<{id: string, type: 'SALE' | 'PURCHASE'} | null>(null);
+  
+  // Payment recording state
+  const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
+  const [paymentAmount, setPaymentAmount] = useState<string>('');
+  const [isPaying, setIsPaying] = useState(false);
 
   // Initial load for specific entities
   useEffect(() => {
@@ -98,6 +103,27 @@ const Reports = () => {
       setReportData(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRecordPayment = async () => {
+    if (!selectedPurchase || !paymentAmount) return;
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) return alert('Enter a valid amount');
+    if (amount > selectedPurchase.balanceDue) return alert('Payment exceeds balance due');
+
+    setIsPaying(true);
+    try {
+      await api.post(`/purchases/${selectedPurchase.id}/payments`, { amount });
+      alert('Payment recorded successfully!');
+      setSelectedPurchase(null);
+      setPaymentAmount('');
+      // Refresh current report
+      fetchReport();
+    } catch (err: any) {
+      alert('Error: ' + err.message);
+    } finally {
+      setIsPaying(false);
     }
   };
 
@@ -345,9 +371,6 @@ const Reports = () => {
                         <button 
                           onClick={() => {
                             const type = t.type === 'SALE' ? 'SALE' : 'PURCHASE';
-                            // We need the ID. Daybook doesn't always have ID for both. 
-                            // But usually Bill: INV-XXX is unique.
-                            // I'll update daybook route to include the original activity ID.
                             if (t.id) setSelectedBill({ id: t.id, type });
                           }}
                           className={`${t.id ? 'text-indigo-600 hover:text-indigo-800 font-bold hover:underline' : 'text-slate-600'}`}
@@ -450,10 +473,8 @@ const Reports = () => {
         const isParty = activeReport === 'parties';
         const isItemProfit = activeReport === 'item-profit';
         
-        // Defensive check: if switching from a non-array report, wait for loading
         if (!Array.isArray(reportData)) return <div className="p-20 text-center animate-pulse text-indigo-400">Switching Data Streams...</div>;
 
-        // Calculate totals for summary row
         const totals = reportData.reduce((acc: any, curr: any) => ({
           qty: acc.qty + (curr.qtySold || 0),
           revenue: acc.revenue + (curr.totalSales || curr.revenue || 0),
@@ -665,6 +686,7 @@ const Reports = () => {
                       <th className="p-4 text-center">Status</th>
                       <th className="p-4 text-right">Bill Amt</th>
                       <th className="p-4 text-right text-red-500">Balance</th>
+                      <th className="p-4 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y text-slate-700 font-medium">
@@ -683,9 +705,19 @@ const Reports = () => {
                         </td>
                         <td className="p-4 text-right font-bold">₹{p.grandTotal.toFixed(2)}</td>
                         <td className="p-4 text-right font-black text-red-600">₹{p.balanceDue.toFixed(2)}</td>
+                        <td className="p-4 text-center">
+                            {p.balanceDue > 0 && (
+                                <button 
+                                    onClick={() => setSelectedPurchase(p)}
+                                    className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-all font-black text-xs flex items-center gap-1 mx-auto"
+                                >
+                                    <span className="text-[14px]">₹</span> Pay
+                                </button>
+                            )}
+                        </td>
                       </tr>
                     ))}
-                    {(!reportData.purchases || reportData.purchases.length === 0) && <tr><td colSpan={5} className="p-8 text-center text-slate-400">No transactions for this supplier.</td></tr>}
+                    {(!reportData.purchases || reportData.purchases.length === 0) && <tr><td colSpan={6} className="p-8 text-center text-slate-400">No transactions for this supplier.</td></tr>}
                   </tbody>
                 </table>
              </div>
@@ -957,6 +989,55 @@ const Reports = () => {
           onClose={() => setSelectedBill(null)}
           onUpdate={fetchReport}
         />
+      )}
+      {/* Record Payment Modal */}
+      {selectedPurchase && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+           <div className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="p-8 pb-4">
+                 <div className="flex justify-between items-start mb-6">
+                    <div>
+                       <h3 className="text-xl font-black text-slate-800">Record Payment</h3>
+                       <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-1">Bill: {selectedPurchase.invoiceNo}</p>
+                    </div>
+                    <button onClick={() => setSelectedPurchase(null)} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full transition-all"><Plus className="rotate-45" size={24} /></button>
+                 </div>
+                 
+                 <div className="bg-red-50 p-4 rounded-xl border border-red-100 mb-6">
+                    <p className="text-[10px] text-red-400 font-bold uppercase tracking-widest mb-1">Balance Due</p>
+                    <h4 className="text-2xl font-black text-red-600">₹{selectedPurchase.balanceDue.toFixed(2)}</h4>
+                 </div>
+
+                 <div className="relative group">
+                    <label className="absolute -top-2.5 left-3 px-1 bg-white text-[10px] font-black text-slate-400 uppercase tracking-widest z-10">Amount Paid (₹)</label>
+                    <input 
+                       type="number"
+                       autoFocus
+                       value={paymentAmount}
+                       onChange={(e) => setPaymentAmount(e.target.value)}
+                       placeholder={selectedPurchase.balanceDue.toString()}
+                       className="w-full p-4 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:ring-0 font-black text-lg text-slate-800 placeholder:text-slate-200"
+                    />
+                 </div>
+              </div>
+
+              <div className="p-8 pt-4 flex gap-3">
+                 <button 
+                    onClick={() => setSelectedPurchase(null)}
+                    className="flex-1 p-4 bg-slate-50 text-slate-400 font-black rounded-2xl hover:bg-slate-100 transition-all text-sm uppercase"
+                 >
+                   Cancel
+                 </button>
+                 <button 
+                    onClick={handleRecordPayment}
+                    disabled={isPaying || !paymentAmount}
+                    className="flex-[2] p-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all text-sm uppercase flex items-center justify-center gap-2"
+                 >
+                   {isPaying ? 'Processing...' : 'Confirm Payment'}
+                 </button>
+              </div>
+           </div>
+        </div>
       )}
     </div>
   );
